@@ -74,17 +74,14 @@
     width: 100% !important;
     text-align: left !important;
   }
-
   .dropdown-item:hover {
     background: rgba(255, 255, 255, 0.05) !important;
     color: white !important;
   }
-
   .dropdown-item.active {
     background: rgba(124, 58, 237, 0.2) !important;
     color: #a78bfa !important;
   }
-
   /* Dropdown separator */
   .dropdown-separator {
     border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
@@ -111,21 +108,17 @@
     border-collapse: collapse !important;
     border: none !important;
   }
-
   th {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     color: rgba(255, 255, 255, 0.4) !important;
   }
-
   td {
     border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
   }
-
   /* Remove border from last row */
   tr:last-child td {
     border-bottom: none !important;
   }
-
   /* Remove any table border */
   .glass-card table,
   .glass-card .table-container,
@@ -137,19 +130,18 @@
   tr:hover {
     background: rgba(255, 255, 255, 0.03) !important;
   }
-
   /* Schedule rowSpan hover */
   .schedule-row td:first-child,
   .schedule-row td:nth-child(2) {
     background-color: transparent !important;
     transition: background-color 0.2s;
   }
-
   .schedule-row:hover td:first-child,
   .schedule-row:hover td:nth-child(2) {
     background-color: rgba(255, 255, 255, 0.05) !important;
   }
 
+/* ================================================ */
   /* Buttons */
   .btn-primary {
     background: linear-gradient(to right, #7c3aed, #4c1d95) !important;
@@ -161,17 +153,16 @@
     border: none !important;
     cursor: pointer !important;
   }
-  
   .btn-primary:hover {
     transform: scale(1.02) !important;
   }
-  
   .btn-primary:disabled {
     opacity: 0.5 !important;
     cursor: not-allowed !important;
     transform: none !important;
   }
 
+/* ================================================ */
   /* Input Fields */
   .input-field {
     background: rgba(255, 255, 255, 0.05) !important;
@@ -181,45 +172,208 @@
     color: white !important;
     width: 100% !important;
     transition: all 0.2s !important;
-  }
-  
+  } 
   .input-field:focus {
     outline: none !important;
     border-color: rgba(124, 58, 237, 0.5) !important;
     background: rgba(255, 255, 255, 0.08) !important;
   }
-  
   .input-field::placeholder {
     color: rgba(255, 255, 255, 0.3) !important;
   }
 
+/* ================================================ */
   /* Status Chips */
   .status-chip-active {
     background: rgba(34, 197, 94, 0.15) !important;
     color: #4ade80 !important;
   }
-
   .status-chip-pending {
     background: rgba(234, 179, 8, 0.15) !important;
     color: #fbbf24 !important;
   }
-
   .status-chip-inactive {
     background: rgba(156, 163, 175, 0.15) !important;
     color: #9ca3af !important;
   }
-
   .status-dot-active {
     background: #4ade80 !important;
   }
-
   .status-dot-pending {
     background: #fbbf24 !important;
   }
-
   .status-dot-inactive {
     background: #9ca3af !important;
   }
+
+  /* ================================================ */
+  /* DatePicker Styles */
+  .datepicker-calendar {
+    background: rgba(26, 26, 26, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    color: white !important;
+    padding: 8px !important;
+  }
+  .datepicker-calendar .react-datepicker__header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 8px 0 !important;
+  }
+  .datepicker-calendar .react-datepicker__current-month {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+  }
+  .datepicker-calendar .react-datepicker__day-name {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+  }
+  .datepicker-calendar .react-datepicker__day {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
+    margin: 2px !important;
+  }
+  .datepicker-calendar .react-datepicker__day:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: white !important;
+  }
+  .datepicker-calendar .react-datepicker__day--selected {
+    background: rgba(124, 58, 237, 0.25) !important;
+    color: #a78bfa !important;
+    font-weight: 500 !important;
+  }
+  .datepicker-calendar .react-datepicker__day--today {
+    border: 1px solid rgba(124, 58, 237, 0.3) !important;
+    font-weight: 500 !important;
+  }
+  .datepicker-calendar .react-datepicker__day--outside-month {
+    color: rgba(255, 255, 255, 0.2) !important;
+  }
+  .datepicker-calendar .react-datepicker__navigation {
+    top: 10px !important;
+  }
+  .datepicker-calendar .react-datepicker__navigation-icon::before {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+  }
+  .datepicker-calendar .react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+    border-color: rgba(255, 255, 255, 0.8) !important;
+  }
+  /* Remove the default datepicker input */
+  .react-datepicker__input-container input {
+    background: transparent !important;
+    border: none !important;
+    color: transparent !important;
+    width: 0 !important;
+    height: 0 !important;
+    padding: 0 !important;
+    position: absolute !important;
+  }
+  .datepicker-popper {
+    z-index: 9999 !important;
+  }
+
+/* ================================================ */
+  /* Custom Input Field - Dark Glass Style */
+  .input-dark {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    color: white !important;
+    font-size: 14px !important;
+    outline: none !important;
+    transition: all 0.2s !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .input-dark::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+  }
+  .input-dark:focus {
+    border-color: rgba(124, 58, 237, 0.5) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  .input-dark-sm {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px !important;
+    padding: 4px 10px !important;
+    color: white !important;
+    font-size: 13px !important;
+    outline: none !important;
+    transition: all 0.2s !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .input-dark-sm::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+  }
+  .input-dark-sm:focus {
+    border-color: rgba(124, 58, 237, 0.5) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  /* Compact number input with validation */
+  .input-number {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    color: white !important;
+    font-size: 13px !important;
+    outline: none !important;
+    width: 80px !important;
+    transition: all 0.2s !important;
+  }
+  .input-number::placeholder {
+    color: rgba(255, 255, 255, 0.3) !important;
+  }
+  .input-number:focus {
+    border-color: rgba(124, 58, 237, 0.5) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  .input-number.error {
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: rgba(239, 68, 68, 0.8) !important;
+  }
+  .input-number.error:focus {
+    border-color: rgba(239, 68, 68, 0.8) !important;
+  }
+  /* Compact select styling */
+  .select-compact {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    color: white !important;
+    font-size: 13px !important;
+    outline: none !important;
+    cursor: pointer !important;
+    min-width: 80px !important;
+  }
+  .select-compact option {
+    background: #1a1a1a !important;
+    color: white !important;
+  }
+  .select-compact:focus {
+    border-color: rgba(124, 58, 237, 0.5) !important;
+  }
+  /* Input error message */
+  .input-error-text {
+    color: rgba(239, 68, 68, 0.8) !important;
+    font-size: 11px !important;
+    margin-top: 2px !important;
+  }
+
 
   /* Mobile: Simplify glass effect */
   @media (max-width: 767px) {
@@ -240,4 +394,5 @@
       -webkit-backdrop-filter: none !important;
     }
   }
+  
 }
