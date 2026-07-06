@@ -18,7 +18,12 @@ export const parseTuteeRow = (row) => {
       package: row[9] || '',
       hoursPerSession: parseFloat(row[10]) || 1,
       schedule: row[11] ? JSON.parse(row[11]) : { days: [], time: '' },
-      paymentRecord: row[12] ? JSON.parse(row[12]) : [],
+      paymentRecord: row[12] ? JSON.parse(row[12]).map(p => ({
+        amount: p.amount || '',
+        type: p.type || 'full',
+        date: p.date || '',
+        method: p.method || 'cash'
+      })) : [],
       balance: parseFloat(row[13]) || 0,
       renewalDate: row[14] || '',
       tutorId: row[15] || '',

@@ -1,45 +1,98 @@
 const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEET_ID;
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
-
-// Base URL for Google Sheets API v4
 const BASE_URL = 'https://sheets.googleapis.com/v4/spreadsheets';
+
+// OAuth token management
+let oauthToken = null;
+let tokenExpiry = null;
+
+export const setOAuthToken = (token, expiresIn) => {
+  oauthToken = token;
+  tokenExpiry = Date.now() + (expiresIn * 1000);
+};
+
+export const getOAuthToken = () => {
+  if (!oauthToken || Date.now() >= tokenExpiry) {
+    return null;
+  }
+  return oauthToken;
+};
+
+export const clearOAuthToken = () => {
+  oauthToken = null;
+  tokenExpiry = null;
+};
+
+// Check if we have a valid token
+const hasValidToken = () => {
+  return oauthToken && Date.now() < tokenExpiry;
+};
+
+// Get auth headers
+const getAuthHeaders = () => {
+  // Use OAuth token first, fallback to API key
+  if (hasValidToken()) {
+    return {
+      'Authorization': `Bearer ${oauthToken}`,
+      'Content-Type': 'application/json',
+    };
+  }
+  // If no OAuth token, try API key as fallback
+  if (API_KEY) {
+    return {
+      'Content-Type': 'application/json',
+    };
+  }
+  throw new Error('No authentication method available');
+};
+
+// Get URL with API key as fallback
+const getUrlWithAuth = (baseUrl) => {
+  if (hasValidToken()) {
+    return baseUrl;
+  }
+  return `${baseUrl}&key=${API_KEY}`;
+};
 
 // Utility to fetch data from a sheet
 export const fetchSheetData = async (sheetName) => {
   try {
-    // First, check if we have the required env variables
-    if (!SPREADSHEET_ID || !API_KEY) {
-      console.error('Missing environment variables:', {
-        hasSheetId: !!SPREADSHEET_ID,
-        hasApiKey: !!API_KEY,
-      });
-      throw new Error('Missing Google Sheets configuration. Please check your .env.local file.');
+    if (!SPREADSHEET_ID) {
+      throw new Error('Missing Google Sheet ID. Please check your environment variables.');
     }
 
-    const url = `${BASE_URL}/${SPREADSHEET_ID}/values/${sheetName}?key=${API_KEY}`;
-    console.log(`Fetching from: ${url.replace(API_KEY, 'HIDDEN')}`); // Log without exposing API key
+    let url = `${BASE_URL}/${SPREADSHEET_ID}/values/${sheetName}`;
+    
+    // Use OAuth or API key
+    if (hasValidToken()) {
+      url = `${url}?access_token=${oauthToken}`;
+    } else if (API_KEY) {
+      url = `${url}?key=${API_KEY}`;
+    } else {
+      throw new Error('No authentication method available. Please log in.');
+    }
+
+    console.log('Fetching from sheet:', sheetName);
     
     const response = await fetch(url);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Response error:', {
+      console.error('Fetch error:', {
         status: response.status,
         statusText: response.statusText,
         errorText: errorText,
       });
       
-      if (response.status === 403) {
-        throw new Error(
-          `Cannot access Google Sheet. Please check:\n` +
-          `1. The sheet is shared with your service account or set to public\n` +
-          `2. The Sheet ID is correct\n` +
-          `3. The API key has Sheets API enabled\n` +
-          `4. The sheet name "${sheetName}" exists`
-        );
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
       }
       
-      throw new Error(`Failed to fetch ${sheetName}: ${response.status} ${response.statusText}`);
+      if (response.status === 403) {
+        throw new Error('Access denied. Please check your permissions.');
+      }
+      
+      throw new Error(`Failed to fetch ${sheetName}: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -57,11 +110,20 @@ export const fetchSheetData = async (sheetName) => {
 // Utility to append data to a sheet
 export const appendToSheet = async (sheetName, values) => {
   try {
-    const url = `${BASE_URL}/${SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=RAW&key=${API_KEY}`;
+    if (!SPREADSHEET_ID) {
+      throw new Error('Missing Google Sheet ID.');
+    }
+
+    if (!hasValidToken()) {
+      throw new Error('Not authenticated. Please log in to make changes.');
+    }
+
+    const url = `${BASE_URL}/${SPREADSHEET_ID}/values/${sheetName}:append?valueInputOption=USER_ENTERED`;
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${oauthToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -70,6 +132,13 @@ export const appendToSheet = async (sheetName, values) => {
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Append error:', errorText);
+      
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      
       throw new Error(`Failed to append to ${sheetName}: ${response.statusText}`);
     }
     
@@ -83,11 +152,21 @@ export const appendToSheet = async (sheetName, values) => {
 // Utility to update a specific cell/range
 export const updateSheetRange = async (range, values) => {
   try {
-    const url = `${BASE_URL}/${SPREADSHEET_ID}/values/${range}?valueInputOption=RAW&key=${API_KEY}`;
+    if (!SPREADSHEET_ID) {
+      throw new Error('Missing Google Sheet ID.');
+    }
+
+    if (!hasValidToken()) {
+      throw new Error('Not authenticated. Please log in to make changes.');
+    }
+
+    const url = `${BASE_URL}/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`;
+    console.log('Updating range:', range);
     
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
+        'Authorization': `Bearer ${oauthToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -96,9 +175,25 @@ export const updateSheetRange = async (range, values) => {
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Update error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText,
+      });
+      
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      
+      if (response.status === 403) {
+        throw new Error('Access denied. Please check your permissions.');
+      }
+      
       throw new Error(`Failed to update ${range}: ${response.statusText}`);
     }
     
+    console.log(`Successfully updated ${range}`);
     return await response.json();
   } catch (error) {
     console.error(`Error updating ${range}:`, error);
