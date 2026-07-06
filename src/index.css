@@ -52,6 +52,45 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
   }
 
+  /* Global Dropdown Styles - matches glass card and bottom nav */
+  .dropdown-glass {
+    background: rgba(26, 26, 26, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    overflow: hidden !important;
+  }
+
+  /* Dropdown item styles */
+  .dropdown-item {
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 8px !important;
+    font-size: 0.75rem !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    transition: all 0.2s !important;
+    cursor: pointer !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+
+  .dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+  }
+
+  .dropdown-item.active {
+    background: rgba(124, 58, 237, 0.2) !important;
+    color: #a78bfa !important;
+  }
+
+  /* Dropdown separator */
+  .dropdown-separator {
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    margin: 6px 8px !important;
+  }
+
   /* Bottom Navigation - Floating - FIXED */
   .bottom-nav {
     background: rgba(26, 26, 26, 0.95) !important;

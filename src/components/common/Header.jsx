@@ -67,26 +67,31 @@ const Header = ({ reminders = [], lastSync = new Date() }) => {
 
             {/* Reminder Dropdown */}
             {showReminders && (
-              <div className="absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto bg-[#1a1a1a] border border-white/10 rounded-xl p-2 z-50 shadow-xl">
-                <div className="px-3 py-2 border-b border-white/10">
-                  <p className="text-sm font-medium text-white/80">Reminders</p>
+                <div className="absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto dropdown-glass z-50 p-2">
+                    <div
+                        style={{
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                            padding: '3px 2px',
+                        }}
+                    >
+                    <p className="text-sm font-medium text-white/80">Reminders</p>
+                    </div>
+                    {reminders.length > 0 ? (
+                    <div className="space-y-1 mt-1">
+                        {reminders.map((reminder, index) => (
+                        <button
+                            key={index}
+                            className="dropdown-item"
+                        >
+                            <p className="text-sm text-white/80">{reminder.message}</p>
+                            <p className="text-xs text-white/40 mt-0.5">{reminder.days} days remaining</p>
+                        </button>
+                        ))}
+                    </div>
+                    ) : (
+                    <p className="text-sm text-white/40 px-3 py-4 text-center">No upcoming reminders</p>
+                    )}
                 </div>
-                {reminders.length > 0 ? (
-                  <div className="space-y-1 mt-1">
-                    {reminders.map((reminder, index) => (
-                      <button
-                        key={index}
-                        className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 transition-colors"
-                      >
-                        <p className="text-sm text-white/80">{reminder.message}</p>
-                        <p className="text-xs text-white/40 mt-0.5">{reminder.days} days remaining</p>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-white/40 px-3 py-4 text-center">No upcoming reminders</p>
-                )}
-              </div>
             )}
           </div>
 
@@ -102,24 +107,30 @@ const Header = ({ reminders = [], lastSync = new Date() }) => {
 
             {/* Connection Dropdown */}
             {showConnection && (
-              <div className="absolute right-0 mt-2 w-64 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 z-50 shadow-xl">
-                <div className="px-3 py-2 border-b border-white/10">
-                  <p className="text-sm font-medium text-white/80">Connection Status</p>
+                <div className="absolute right-0 mt-2 w-64 dropdown-glass z-50 p-2">
+                    <div
+                        style={{
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                            padding: '3px 2px',
+                        }}
+                    >
+                        <p className="text-sm font-medium text-white/80">Connection Status</p>
+                        </div>
+                        <div className="px-3 py-2 space-y-2">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                            <span className="text-sm text-white/80">Connection: OK</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-white/40" />
+                            <span className="text-sm text-white/60">
+                            Last sync: {formatDistanceToNow(lastSync, { addSuffix: true })}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div className="px-3 py-2 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-white/80">Connection: OK</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-white/40" />
-                    <span className="text-sm text-white/60">
-                      Last sync: {formatDistanceToNow(lastSync, { addSuffix: true })}
-                    </span>
-                  </div>
-                </div>
-              </div>
             )}
+            
           </div>
         </div>
       </div>

@@ -257,7 +257,7 @@ const SchedulePage = () => {
       <div className="container mx-auto px-4 py-4 pb-32">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">
-            Tutors' Schedule {getActiveSchoolYear()}
+            Tutors' Schedule
           </h2>
           <button className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
             <Plus className="w-3 h-3" />

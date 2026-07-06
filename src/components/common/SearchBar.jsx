@@ -50,6 +50,12 @@ const SearchBar = () => {
     }
   };
 
+  const handleClose = () => {
+    setQuery('');
+    setSearchQuery('');
+    setIsExpanded(false);
+  };
+
   return (
     <div className="w-full" ref={containerRef}>
       <form 
@@ -76,13 +82,11 @@ const SearchBar = () => {
           className="flex-1 bg-transparent text-white placeholder-white/40 outline-none text-sm min-w-0"
         />
         
-        {query && (
+        {/* Always show X button when expanded */}
+        {isExpanded && (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClear();
-            }}
+            onClick={handleClose}
             className="p-1 hover:bg-white/10 rounded-full transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4 text-white/40" />

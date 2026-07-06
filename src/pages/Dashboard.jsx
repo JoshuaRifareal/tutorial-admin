@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, UserRound, Coins, Wallet, Calendar } from 'lucide-react';
+import { Users, UserRound, Coins, Wallet, Calendar, Plus } from 'lucide-react';
 import useTuteeStore from '../stores/tuteeStore';
 import useTutorStore from '../stores/tutorStore';
 import Header from '../components/common/Header';
@@ -15,14 +15,13 @@ const Dashboard = () => {
   const { tutees, isLoading: tuteesLoading, fetchTutees, error: tuteesError } = useTuteeStore();
   const { tutors, isLoading: tutorsLoading, fetchTutors, error: tutorsError } = useTutorStore();
   
-  const [revenuePeriod, setRevenuePeriod] = useState('30d');
-  const [balancePeriod, setBalancePeriod] = useState('30d');
+  const [revenuePeriod, setRevenuePeriod] = useState('All');
+  const [balancePeriod, setBalancePeriod] = useState('All');
   const [dataLoaded, setDataLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [lastSync, setLastSync] = useState(new Date());
   const fetchAttempted = useRef(false);
 
-  // Load data on mount - only once
   useEffect(() => {
     if (fetchAttempted.current) return;
     fetchAttempted.current = true;
@@ -46,7 +45,6 @@ const Dashboard = () => {
     loadData();
   }, [fetchTutees, fetchTutors]);
 
-  // Calculate reminders (renewals in next 7 days)
   const getReminders = () => {
     if (!dataLoaded || tutees.length === 0) return [];
     
@@ -74,25 +72,26 @@ const Dashboard = () => {
 
   const reminders = getReminders();
 
-  // Calculate revenue based on period
+  // Update the calculateRevenue function
   const calculateRevenue = (period) => {
-    if (!dataLoaded || tutees.length === 0) return 0;
+    // Use tutees directly from store, not dataLoaded
+    if (tutees.length === 0) return 0;
     
     const now = new Date();
     let startDate = new Date();
     
-    switch(period) {
-      case '7d':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        startDate = new Date(0);
+    const periodMap = {
+      '7 days': 7,
+      '30 days': 30,
+      '90 days': 90,
+      'All': 0,
+    };
+    
+    const days = periodMap[period] || 0;
+    if (days > 0) {
+      startDate.setDate(now.getDate() - days);
+    } else {
+      startDate = new Date(0);
     }
 
     let totalRevenue = 0;
@@ -114,25 +113,26 @@ const Dashboard = () => {
     return totalRevenue;
   };
 
-  // Calculate balance based on period
+  // Update the calculateBalance function
   const calculateBalance = (period) => {
-    if (!dataLoaded || tutees.length === 0) return 0;
+    // Use tutees directly from store, not dataLoaded
+    if (tutees.length === 0) return 0;
     
     const now = new Date();
     let startDate = new Date();
     
-    switch(period) {
-      case '7d':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        startDate = new Date(0);
+    const periodMap = {
+      '7 days': 7,
+      '30 days': 30,
+      '90 days': 90,
+      'All': 0,
+    };
+    
+    const days = periodMap[period] || 0;
+    if (days > 0) {
+      startDate.setDate(now.getDate() - days);
+    } else {
+      startDate = new Date(0);
     }
 
     let totalBalance = 0;
@@ -155,7 +155,6 @@ const Dashboard = () => {
   const totalRevenue = calculateRevenue(revenuePeriod);
   const totalBalance = calculateBalance(balancePeriod);
 
-  // Show loading state
   if (tuteesLoading || tutorsLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
@@ -185,7 +184,6 @@ const Dashboard = () => {
     );
   }
 
-  // Show error state
   if (hasError || tuteesError || tutorsError) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
@@ -214,17 +212,13 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Sticky Header */}
       <Header reminders={reminders} lastSync={lastSync} />
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-4 pb-32">
-        {/* Search Bar - Full Width */}
         <div className="w-full mb-4">
           <SearchBar />
         </div>
 
-        {/* Stats Cards - 2 columns on all devices */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <StatsCard
             title="Total Tutees"
@@ -258,42 +252,78 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Revenue Card */}
+        {/* Revenue Card with Plus Button */}
         <div className="glass-card p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
+          {/* Title row with period dropdown */}
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-emerald-400" />
               <h3 className="font-medium text-white/80">Revenue</h3>
             </div>
             <PeriodDropdown
-              options={['7d', '30d', '90d', 'All']}
+              options={['7 days', '30 days', '90 days', 'All']}
               value={revenuePeriod}
               onChange={setRevenuePeriod}
             />
           </div>
-          <p className="text-3xl font-bold text-white">₱{totalRevenue.toLocaleString()}</p>
-          <p className="text-sm text-white/40 mt-1">Total collected</p>
+          
+          {/* Amount row with plus button */}
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-white">₱{totalRevenue.toLocaleString()}</p>
+              <p className="text-sm text-white/40 mt-1">Total collected</p>
+            </div>
+            <button 
+              className="flex items-center gap-1.5 px-3 py-3 my-2 rounded-xl transition-colors bg-white/5 hover:bg-white/10 text-white/60 hover:text-white"
+              style={{
+                minHeight: '44px',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                backgroundColor: 'rgb(46, 46, 46)',
+              }}
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
         </div>
-
-        {/* Balance Card */}
+        
+        {/* Balance Card with Plus Button inline with amount */}
         <div className="glass-card p-4">
-          <div className="flex items-center justify-between mb-3">
+          {/* Title row with period dropdown */}
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Wallet className="w-5 h-5 text-amber-400" />
               <h3 className="font-medium text-white/80">Outstanding Balance</h3>
             </div>
             <PeriodDropdown
-              options={['7d', '30d', '90d', 'All']}
+              options={['7 days', '30 days', '90 days', 'All']}
               value={balancePeriod}
               onChange={setBalancePeriod}
             />
           </div>
-          <p className="text-3xl font-bold text-white">₱{totalBalance.toLocaleString()}</p>
-          <p className="text-sm text-white/40 mt-1">Total unpaid</p>
+          
+          {/* Amount row with plus button */}
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-white">₱{totalBalance.toLocaleString()}</p>
+              <p className="text-sm text-white/40 mt-1">Total unpaid</p>
+            </div>
+            <button 
+              className="flex items-center gap-1.5 px-3 py-3 my-2 rounded-xl transition-colors bg-white/5 hover:bg-white/10 text-white/60 hover:text-white"
+              style={{
+                minHeight: '44px',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                backgroundColor: 'rgb(46, 46, 46)',
+              }}
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
         </div>
+
       </div>
 
-      {/* Bottom Navigation - Floating */}
       <BottomNav />
     </div>
   );
