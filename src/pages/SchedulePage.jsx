@@ -94,23 +94,23 @@ const SchedulePage = () => {
     }
 
     if (weekdayFilter !== 'all') {
-      const dayMap = {
-        'monday': 'Mon',
-        'tuesday': 'Tue',
-        'wednesday': 'Wed',
-        'thursday': 'Thu',
-        'friday': 'Fri',
-        'saturday': 'Sat'
-      };
-      const day = dayMap[weekdayFilter];
-      result = result.map(group => ({
-        ...group,
-        tutees: group.tutees.filter(t => {
-          const schedule = t.schedule || { days: [] };
-          return schedule.days?.includes(day) || false;
-        })
-      })).filter(group => group.tutees.length > 0);
-    }
+        const dayMap = {
+          'monday': 'Mon',
+          'tuesday': 'Tue',
+          'wednesday': 'Wed',
+          'thursday': 'Thu',
+          'friday': 'Fri',
+          'saturday': 'Sat'
+        };
+        const day = dayMap[weekdayFilter];
+        result = result.map(group => ({
+          ...group,
+          tutees: group.tutees.filter(t => {
+            const schedule = t.schedule || {};
+            return schedule[day] && schedule[day] !== 'TBA' || false;
+          })
+        })).filter(group => group.tutees.length > 0);
+      }
 
     return result;
   }, [scheduleData, tutorFilter, schoolYearFilter, weekdayFilter]);
@@ -142,11 +142,8 @@ const SchedulePage = () => {
   );
 
   const getScheduleForDay = (tutee, day) => {
-    const schedule = tutee.schedule || { days: [], time: '' };
-    if (schedule.days?.includes(day)) {
-      return schedule.time || 'TBA';
-    }
-    return 'TBA';
+    const schedule = tutee.schedule || {};
+    return schedule[day] || 'TBA';
   };
 
   useEffect(() => {
@@ -204,8 +201,8 @@ const SchedulePage = () => {
     const options = [{ value: 'all', label: 'All Weekdays', count: tutees.length }];
     Object.entries(dayMap).forEach(([key, day]) => {
       const count = tutees.filter(t => {
-        const schedule = t.schedule || { days: [] };
-        return schedule.days?.includes(day) || false;
+        const schedule = t.schedule || {};
+        return schedule[day] && schedule[day] !== 'TBA' || false;
       }).length;
       options.push({
         value: key,

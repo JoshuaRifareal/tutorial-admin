@@ -17,7 +17,7 @@ export const parseTuteeRow = (row) => {
       rate: parseFloat(row[8]) || 0,
       package: row[9] || '',
       hoursPerSession: parseFloat(row[10]) || 1,
-      schedule: row[11] ? JSON.parse(row[11]) : { days: [], time: '' },
+      schedule: row[11] ? JSON.parse(row[11]) : {},
       paymentRecord: row[12] ? JSON.parse(row[12]).map(p => ({
         amount: p.amount || '',
         type: p.type || 'full',
@@ -79,7 +79,7 @@ export const tuteeToRow = (tutee) => {
     tutee.rate.toString(),
     tutee.package,
     tutee.hoursPerSession.toString(),
-    JSON.stringify(tutee.schedule),
+    JSON.stringify(tutee.schedule || {}),
     JSON.stringify(tutee.paymentRecord),
     tutee.balance.toString(),
     tutee.renewalDate,

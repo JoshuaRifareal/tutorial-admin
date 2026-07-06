@@ -8,6 +8,7 @@ import BottomNav from '../components/common/BottomNav';
 import StatusChip from '../components/lists/StatusChip';
 import Select from '../components/common/Select';
 import DatePicker from '../components/common/DatePicker';
+import TimePicker from '../components/common/TimePicker';
 import { format, parseISO } from 'date-fns';
 
 const TuteeProfilePage = () => {
@@ -53,8 +54,8 @@ const TuteeProfilePage = () => {
   };
 
   const getDaySchedule = (day) => {
-    const schedule = tutee?.schedule || { days: [], time: '' };
-    return schedule.days?.includes(day) ? schedule.time : 'TBA';
+    const schedule = tutee?.schedule || {};
+    return schedule[day] || 'TBA';
   };
 
   const validateNumber = (field, value, min, max, required = false) => {
@@ -151,30 +152,16 @@ const TuteeProfilePage = () => {
 
   const handleScheduleChange = (day, value) => {
     setFormData(prev => {
-      const schedule = prev.schedule || { days: [], time: '' };
-      let days = [...schedule.days];
+      const currentSchedule = prev.schedule || {};
+      const newSchedule = {
+        ...currentSchedule,
+        [day]: value || ''
+      };
       
-      if (value && value !== 'TBA') {
-        if (!days.includes(day)) {
-          days.push(day);
-        }
-        return { 
-          ...prev, 
-          schedule: { 
-            days, 
-            time: value 
-          } 
-        };
-      } else {
-        days = days.filter(d => d !== day);
-        return { 
-          ...prev, 
-          schedule: { 
-            days, 
-            time: schedule.time 
-          } 
-        };
-      }
+      return {
+        ...prev,
+        schedule: newSchedule
+      };
     });
   };
 
@@ -437,9 +424,8 @@ const TuteeProfilePage = () => {
               <tbody>
                 <tr>
                   {days.map((day, index) => {
-                    const schedule = currentData.schedule || { days: [], time: '' };
-                    const hasDay = schedule.days?.includes(day);
-                    const time = hasDay ? schedule.time : 'TBA';
+                    const schedule = currentData.schedule || {};
+                    const time = schedule[day] || 'TBA';
                     const isTBA = time === 'TBA';
                     
                     return (
@@ -451,13 +437,11 @@ const TuteeProfilePage = () => {
                         }}
                       >
                         {isEditing ? (
-                          <input
-                            type="text"
-                            value={hasDay ? schedule.time : ''}
-                            onChange={(e) => handleScheduleChange(day, e.target.value)}
+                          <TimePicker
+                            value={schedule[day] || ''}
+                            onChange={(val) => handleScheduleChange(day, val)}
                             placeholder="TBA"
-                            className="input-dark-sm"
-                            style={{ textAlign: 'center' }}
+                            className="w-full"
                           />
                         ) : (
                           <span className={isTBA ? 'text-white/30' : 'text-white/70 font-medium'}>
