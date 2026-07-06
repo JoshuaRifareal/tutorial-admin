@@ -4,7 +4,10 @@
 
 @layer base {
   body {
-    @apply bg-[#0a0a0a] text-white min-h-screen;
+    @apply bg-[#0a0a0a] min-h-screen;
+    color: white;
+    min-height: 100vh;
+    color: white;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -77,6 +80,46 @@
     clip-path: inset(0 round 24px);
     overflow: hidden;
   }
+
+  .btn-primary {
+    background: linear-gradient(to right, #7c3aed, #4c1d95);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .btn-primary:hover {
+    transform: scale(1.02);
+  }
+  
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .input-field {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: white;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  
+  .input-field:focus {
+    outline: none;
+    border-color: #7c3aed;
+  }
+  
+  .input-field::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
   
   /* For mobile, use a simpler background without blur */
   @media (max-width: 767px) {
@@ -85,18 +128,6 @@
       -webkit-backdrop-filter: none;
       background: rgba(255, 255, 255, 0.08);
     }
-  }
-  
-  .gradient-primary {
-    @apply bg-gradient-to-r from-purple-700 to-purple-900;
-  }
-  
-  .btn-primary {
-    @apply gradient-primary text-white px-6 py-3 rounded-xl hover:scale-[1.02] transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  
-  .input-field {
-    @apply bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 transition-all duration-200;
   }
 }
 
