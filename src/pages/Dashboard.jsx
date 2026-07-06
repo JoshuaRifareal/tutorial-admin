@@ -244,7 +244,7 @@ const Dashboard = () => {
             onClick={() => navigate('/tutors')}
           />
           <StatsCard
-            title="Upcoming Renewals"
+            title="Renewals"
             value={reminders.length}
             icon={Calendar}
             color="orange"
