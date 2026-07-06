@@ -28,7 +28,6 @@ const TutorListPage = () => {
     fetchTutees();
   }, []);
 
-  // Get tutee names by IDs
   const getTuteeNames = (tuteeIds) => {
     if (!tuteeIds || tuteeIds.length === 0) return '-';
     const names = tuteeIds
@@ -40,7 +39,6 @@ const TutorListPage = () => {
     return names.length > 0 ? names.join(', ') : '-';
   };
 
-  // Build filter options with counts
   const getFilterOptions = (field) => {
     const counts = {};
     const allCount = tutors.length;
@@ -62,11 +60,9 @@ const TutorListPage = () => {
     return options;
   };
 
-  // Filter and sort tutors
   const filteredTutors = useMemo(() => {
     let result = [...tutors];
     
-    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(t => 
@@ -76,22 +72,18 @@ const TutorListPage = () => {
       );
     }
     
-    // School filter
     if (schoolFilter !== 'all') {
       result = result.filter(t => t.school === schoolFilter);
     }
     
-    // Program filter
     if (programFilter !== 'all') {
       result = result.filter(t => t.program === programFilter);
     }
     
-    // Major filter
     if (majorFilter !== 'all') {
       result = result.filter(t => t.major === majorFilter);
     }
     
-    // Sort by name
     if (sortDirection === 'asc') {
       result.sort((a, b) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`));
     } else if (sortDirection === 'desc') {
@@ -101,14 +93,12 @@ const TutorListPage = () => {
     return result;
   }, [tutors, searchQuery, schoolFilter, programFilter, majorFilter, sortDirection]);
 
-  // Pagination
   const totalPages = Math.ceil(filteredTutors.length / itemsPerPage);
   const paginatedTutors = filteredTutors.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, schoolFilter, programFilter, majorFilter, sortDirection]);
@@ -137,7 +127,6 @@ const TutorListPage = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-4 pb-32">
-        {/* Header with Add Button */}
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">All Tutors</h2>
           <button className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1">
@@ -146,19 +135,17 @@ const TutorListPage = () => {
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-4">
           <SearchBar />
         </div>
 
-        {/* Table */}
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full border-collapse">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12">#</th>
-                  <th className="text-left py-3 px-3">
+                <tr className="border-0">
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12 border-0">#</th>
+                  <th className="text-left py-3 px-3 border-0">
                     <ColumnHeader
                       label="Name"
                       type="sort"
@@ -166,7 +153,7 @@ const TutorListPage = () => {
                       onSortToggle={(direction) => setSortDirection(direction)}
                     />
                   </th>
-                  <th className="text-left py-3 px-3">
+                  <th className="text-left py-3 px-3 border-0">
                     <ColumnHeader
                       label="School"
                       type="filter"
@@ -175,7 +162,7 @@ const TutorListPage = () => {
                       onChange={setSchoolFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3">
+                  <th className="text-left py-3 px-3 border-0">
                     <ColumnHeader
                       label="Program"
                       type="filter"
@@ -184,7 +171,7 @@ const TutorListPage = () => {
                       onChange={setProgramFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3">
+                  <th className="text-left py-3 px-3 border-0">
                     <ColumnHeader
                       label="Major"
                       type="filter"
@@ -193,7 +180,7 @@ const TutorListPage = () => {
                       onChange={setMajorFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40">
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 border-0">
                     Tutees
                   </th>
                 </tr>
@@ -201,7 +188,7 @@ const TutorListPage = () => {
               <tbody>
                 {paginatedTutors.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-12 text-white/40 text-sm">
+                    <td colSpan="6" className="text-center py-12 text-white/40 text-sm border-0">
                       No tutors found
                     </td>
                   </tr>
@@ -209,19 +196,19 @@ const TutorListPage = () => {
                   paginatedTutors.map((tutor, index) => (
                     <tr 
                       key={tutor.id} 
-                      className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
+                      className="border-0 hover:bg-white/5 transition-colors cursor-pointer"
                       onClick={() => navigate(`/tutor/${tutor.id}`)}
                     >
-                      <td className="py-3 px-3 text-sm text-white/40">
+                      <td className="py-3 px-3 text-sm text-white/40 border-0">
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
-                      <td className="py-3 px-3 text-sm text-white/80">
+                      <td className="py-3 px-3 text-sm text-white/80 border-0">
                         {tutor.firstName} {tutor.lastName}
                       </td>
-                      <td className="py-3 px-3 text-sm text-white/60">{tutor.school || '-'}</td>
-                      <td className="py-3 px-3 text-sm text-white/60">{tutor.program || '-'}</td>
-                      <td className="py-3 px-3 text-sm text-white/60">{tutor.major || '-'}</td>
-                      <td className="py-3 px-3 text-sm text-white/60">
+                      <td className="py-3 px-3 text-sm text-white/60 border-0">{tutor.school || '-'}</td>
+                      <td className="py-3 px-3 text-sm text-white/60 border-0">{tutor.program || '-'}</td>
+                      <td className="py-3 px-3 text-sm text-white/60 border-0">{tutor.major || '-'}</td>
+                      <td className="py-3 px-3 text-sm text-white/60 border-0">
                         {getTuteeNames(tutor.tutees)}
                       </td>
                     </tr>
@@ -231,7 +218,6 @@ const TutorListPage = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {filteredTutors.length > 0 && (
             <Pagination
               currentPage={currentPage}
@@ -241,7 +227,6 @@ const TutorListPage = () => {
           )}
         </div>
 
-        {/* Result count */}
         <div className="mt-4 text-center">
           <p className="text-xs text-white/40">
             Showing {paginatedTutors.length} of {filteredTutors.length} tutors

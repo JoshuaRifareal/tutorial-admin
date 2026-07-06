@@ -6,12 +6,9 @@
   body {
     @apply bg-[#0a0a0a] min-h-screen;
     color: white;
-    min-height: 100vh;
-    color: white;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Prevent rendering artifacts */
     overscroll-behavior: none;
   }
 
@@ -21,113 +18,187 @@
     height: 4px;
   }
   ::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.25);
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+@layer components {
+  /* Glass Card - Main */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+    transform: translateZ(0);
+    clip-path: inset(0 round 24px);
+    overflow: hidden;
+  }
+
+  /* Header - Sticky */
+  header {
+    background: rgba(10, 10, 10, 0.8) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  /* Bottom Navigation - Floating - FIXED */
+  .bottom-nav {
+    background: rgba(26, 26, 26, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  /* Bottom Nav inner container - remove any extra borders */
+  .bottom-nav > div {
+    border: none !important;
+  }
+
+  /* Tables - FIXED */
+  table {
+    border-collapse: collapse !important;
+    border: none !important;
+  }
+
+  th {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+  }
+
+  td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  }
+
+  /* Remove border from last row */
+  tr:last-child td {
+    border-bottom: none !important;
+  }
+
+  /* Remove any table border */
+  .glass-card table,
+  .glass-card .table-container,
+  .glass-card .overflow-x-auto {
+    border: none !important;
+  }
+
+  /* Tr hover */
+  tr:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
   }
 
   /* Schedule rowSpan hover */
   .schedule-row td:first-child,
   .schedule-row td:nth-child(2) {
-    background-color: transparent;
+    background-color: transparent !important;
     transition: background-color 0.2s;
   }
 
   .schedule-row:hover td:first-child,
   .schedule-row:hover td:nth-child(2) {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-}
-
-@layer components {
-  /* Wrapper to prevent backdrop-filter bleed */
-  .glass-wrapper {
-    position: relative;
-    border-radius: 24px;
-    overflow: hidden;
-    isolation: isolate;
-    transform: translateZ(0);
+    background-color: rgba(255, 255, 255, 0.05) !important;
   }
 
-  .glass-wrapper > .glass-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transform: translateZ(0);
-    /* Clip any potential bleed */
-    clip-path: inset(0 round 24px);
-  }
-
-  /* Original glass-card class - now uses the wrapper approach */
-  .glass-card {
-    position: relative;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transform: translateZ(0);
-    clip-path: inset(0 round 24px);
-    overflow: hidden;
-  }
-
+  /* Buttons */
   .btn-primary {
-    background: linear-gradient(to right, #7c3aed, #4c1d95);
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    font-weight: 500;
-    transition: all 0.2s;
-    border: none;
-    cursor: pointer;
+    background: linear-gradient(to right, #7c3aed, #4c1d95) !important;
+    color: white !important;
+    padding: 0.5rem 0.8rem !important;
+    border-radius: 0.75rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+    border: none !important;
+    cursor: pointer !important;
   }
   
   .btn-primary:hover {
-    transform: scale(1.02);
+    transform: scale(1.02) !important;
   }
   
   .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
   }
-  
+
+  /* Input Fields */
   .input-field {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: white;
-    width: 100%;
-    transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+    color: white !important;
+    width: 100% !important;
+    transition: all 0.2s !important;
   }
   
   .input-field:focus {
-    outline: none;
-    border-color: #7c3aed;
+    outline: none !important;
+    border-color: rgba(124, 58, 237, 0.5) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
   }
   
   .input-field::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.3) !important;
   }
-  
-  /* For mobile, use a simpler background without blur */
+
+  /* Status Chips */
+  .status-chip-active {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #4ade80 !important;
+  }
+
+  .status-chip-pending {
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #fbbf24 !important;
+  }
+
+  .status-chip-inactive {
+    background: rgba(156, 163, 175, 0.15) !important;
+    color: #9ca3af !important;
+  }
+
+  .status-dot-active {
+    background: #4ade80 !important;
+  }
+
+  .status-dot-pending {
+    background: #fbbf24 !important;
+  }
+
+  .status-dot-inactive {
+    background: #9ca3af !important;
+  }
+
+  /* Mobile: Simplify glass effect */
   @media (max-width: 767px) {
     .glass-card {
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+    }
+    
+    header {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(10, 10, 10, 0.95) !important;
+    }
+    
+    .bottom-nav {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
     }
   }
 }
-

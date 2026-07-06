@@ -32,7 +32,6 @@ const ColumnHeader = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Use useLayoutEffect for synchronous positioning before paint
   useLayoutEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -41,14 +40,12 @@ const ColumnHeader = ({
         left: rect.left,
         width: Math.max(rect.width, 150),
       });
-      // Mark as positioned after setting position
       setIsPositioned(true);
     } else {
       setIsPositioned(false);
     }
   }, [isOpen]);
 
-  // Handle window resize and scroll to reposition
   useEffect(() => {
     if (!isOpen) return;
 
@@ -77,7 +74,7 @@ const ColumnHeader = ({
     return createPortal(
       <div 
         id="column-dropdown"
-        className="fixed z-[9999] bg-[#1a1a1a] border border-white/10 rounded-xl p-1 shadow-2xl"
+        className="fixed z-[9999] rounded-xl p-1 shadow-2xl"
         style={{
           top: dropdownPosition.top,
           left: dropdownPosition.left,
@@ -85,6 +82,12 @@ const ColumnHeader = ({
           maxWidth: 280,
           maxHeight: 300,
           overflowY: 'auto',
+          background: 'rgba(26, 26, 26, 0.95)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          borderRadius: '12px',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
         }}
       >
         {type === 'sort' ? (
@@ -121,7 +124,7 @@ const ColumnHeader = ({
             </button>
             {sortDirection && (
               <>
-                <div className="border-t border-white/10 my-1" />
+                <div className="border-t border-white/5 my-1" />
                 <button
                   onClick={() => {
                     onSortToggle(null);
@@ -159,7 +162,12 @@ const ColumnHeader = ({
             ))}
             {value !== 'all' && (
               <>
-                <div className="border-t border-white/10 my-1" />
+                <div 
+                style={{
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    margin: '6px 8px',
+                }}
+                />
                 <button
                   onClick={() => {
                     onChange('all');
@@ -179,7 +187,6 @@ const ColumnHeader = ({
     );
   };
 
-  // For sort type button
   if (type === 'sort') {
     return (
       <div className="relative inline-block">
@@ -198,7 +205,6 @@ const ColumnHeader = ({
     );
   }
 
-  // For filter type button
   const activeFilter = value !== 'all';
 
   return (

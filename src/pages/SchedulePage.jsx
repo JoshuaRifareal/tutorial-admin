@@ -265,7 +265,11 @@ const SchedulePage = () => {
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 mb-4 px-1">
+        <div className="flex flex-wrap items-center gap-4 mb-4 px-3 py-2"
+          style={{
+            color: 'rgba(255, 255, 255, 0.4)',
+          }}
+        >
           <div className="flex items-center gap-2">
             <span className="text-xs text-white/40">Year:</span>
             <ColumnHeader
@@ -300,24 +304,24 @@ const SchedulePage = () => {
 
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full min-w-[800px] border-collapse">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12">#</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[140px]">Tutor Name</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[120px]">Tutee Name</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Monday</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Tuesday</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Wednesday</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Thursday</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Friday</th>
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px]">Saturday</th>
+                <tr className="border-0">
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12 border-0">#</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[140px] border-0">Tutor Name</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[120px] border-0">Tutee Name</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Monday</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Tuesday</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Wednesday</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Thursday</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Friday</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 min-w-[90px] border-0">Saturday</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedData.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="text-center py-12 text-white/40 text-sm">
+                    <td colSpan="9" className="text-center py-12 text-white/40 text-sm border-0">
                       No schedule found
                     </td>
                   </tr>
@@ -331,7 +335,7 @@ const SchedulePage = () => {
                     return (
                       <tr 
                         key={rowId}
-                        className={`border-b border-white/5 transition-colors cursor-pointer ${
+                        className={`border-0 transition-colors cursor-pointer ${
                           isHovered ? 'bg-white/5' : ''
                         }`}
                         onMouseEnter={() => {
@@ -344,7 +348,7 @@ const SchedulePage = () => {
                       >
                         {item.isFirst && (
                           <td 
-                            className="py-3 px-3 text-sm text-white/40 align-middle"
+                            className="py-3 px-3 text-sm text-white/40 align-middle border-0"
                             rowSpan={item.totalTutees}
                           >
                             {item.tutorNumber}
@@ -353,7 +357,7 @@ const SchedulePage = () => {
                         
                         {item.isFirst && (
                           <td 
-                            className={`py-3 px-3 text-sm font-medium align-middle transition-colors ${
+                            className={`py-3 px-3 text-sm font-medium align-middle border-0 transition-colors ${
                               isTutorHovered ? 'text-white/90' : 'text-white/80'
                             }`}
                             rowSpan={item.totalTutees}
@@ -364,38 +368,38 @@ const SchedulePage = () => {
                           </td>
                         )}
                         
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {item.tutee.firstName} {item.tutee.lastName}
                         </td>
                         
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Mon')}
                         </td>
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Tue')}
                         </td>
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Wed')}
                         </td>
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Thu')}
                         </td>
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Fri')}
                         </td>
-                        <td className={`py-3 px-3 text-sm transition-colors ${
+                        <td className={`py-3 px-3 text-sm border-0 transition-colors ${
                           isRowHovered ? 'text-white/80' : 'text-white/60'
                         }`}>
                           {getScheduleForDay(item.tutee, 'Sat')}

@@ -14,7 +14,18 @@ const BottomNav = () => {
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4">
-      <div className="bg-[#1a1a1a] border border-white/10 rounded-3xl shadow-lg max-w-xs w-full">
+        <div 
+        className="w-full max-w-xs rounded-xl shadow-lg"
+        style={{
+            background: 'rgba(26, 26, 26, 0.95)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            borderRadius: '26px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            padding: '0 6px',
+        }}
+        >
         <div className="flex items-center justify-around px-2 py-1.5">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
