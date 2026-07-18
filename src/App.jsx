@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom';
-import { useState } from 'react';
 import Dashboard from './pages/Dashboard';
 import TuteeListPage from './pages/TuteeListPage';
 import TutorListPage from './pages/TutorListPage';
@@ -8,16 +7,13 @@ import TuteeProfilePage from './pages/TuteeProfilePage';
 import TutorProfilePage from './pages/TutorProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import GoogleAuth from './components/auth/GoogleAuth';
-import Header from './components/common/Header';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   return (
-    <GoogleAuth onAuthChange={setIsAuthenticated}>
-      {({ isAuthenticated: auth, login, logout, user }) => (
+    <GoogleAuth>
+      {({ isAuthenticated, login, logout, user }) => (
         <div className="min-h-screen bg-[#0a0a0a]">
-          {!auth ? (
+          {!isAuthenticated ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="glass-card p-8 text-center max-w-md w-full">
                 <h1 className="text-2xl font-bold text-white mb-4">Welcome to STS Admin</h1>

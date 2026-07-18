@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { fetchSheetData, appendToSheet, updateSheetRange } from '../services/googleSheets';
 import { parseTutorRow, tutorToRow } from '../utils/dataHelpers';
 import { v4 as uuidv4 } from 'uuid';
+import { logEvent } from '../services/auditService';
 
 const useTutorStore = create((set, get) => ({
   tutors: [],
@@ -51,6 +52,7 @@ const useTutorStore = create((set, get) => ({
         updatedAt: new Date().toISOString(),
         isDeleted: false,
         tutees: [],
+        substitutions: [],
       };
       
       const row = tutorToRow(newTutor);
@@ -79,6 +81,21 @@ const useTutorStore = create((set, get) => ({
       }
       
       const oldTutor = state.tutors[index];
+      
+      // Track changes for audit log
+      const changes = {};
+      Object.keys(updatedData).forEach(key => {
+        const oldValue = oldTutor[key];
+        const newValue = updatedData[key];
+        
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changes[key] = { 
+            old: oldValue, 
+            new: newValue 
+          };
+        }
+      });
+      
       const updatedTutor = {
         ...oldTutor,
         ...updatedData,
@@ -86,13 +103,28 @@ const useTutorStore = create((set, get) => ({
       };
       
       const rowNumber = index + 2;
-      const range = `tutors!A${rowNumber}:K${rowNumber}`;
+      const range = `tutors!A${rowNumber}:L${rowNumber}`;
       const row = tutorToRow(updatedTutor);
       
       await updateSheetRange(range, row);
       
       const newTutors = [...state.tutors];
       newTutors[index] = updatedTutor;
+      
+      // Log the changes if there are any
+      if (Object.keys(changes).length > 0) {
+        const userEmail = localStorage.getItem('google_oauth_user') 
+          ? JSON.parse(localStorage.getItem('google_oauth_user')).email 
+          : 'system';
+        
+        await logEvent({
+          entityType: 'tutor',
+          entityId: id,
+          changes,
+          action: 'update',
+          userEmail: userEmail,
+        });
+      }
       
       set({ tutors: newTutors, isLoading: false });
       return updatedTutor;
@@ -121,7 +153,7 @@ const useTutorStore = create((set, get) => ({
       
       const index = state.tutors.findIndex(t => t.id === id);
       const rowNumber = index + 2;
-      const range = `tutors!A${rowNumber}:K${rowNumber}`;
+      const range = `tutors!A${rowNumber}:L${rowNumber}`;
       const row = tutorToRow(updatedTutor);
       
       await updateSheetRange(range, row);

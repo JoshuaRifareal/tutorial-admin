@@ -50,19 +50,28 @@ export const parseTuteeRow = (row) => {
 export const parseTutorRow = (row) => {
   if (!row || row.length < 8) return null;
   
-  return {
-    id: row[0] || uuidv4(),
-    firstName: row[1] || '',
-    lastName: row[2] || '',
-    school: row[3] || '',
-    program: row[4] || '',
-    major: row[5] || '',
-    tutees: row[6] ? JSON.parse(row[6]) : [],
-    isDeleted: row[7] === 'TRUE',
-    deletedAt: row[8] || '',
-    createdAt: row[9] || new Date().toISOString(),
-    updatedAt: row[10] || new Date().toISOString(),
-  };
+  try {
+    const id = row[0] || `tutor_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    console.log('Parsing tutor row, ID:', id);
+    
+    return {
+      id: id,
+      firstName: row[1] || '',
+      lastName: row[2] || '',
+      school: row[3] || '',
+      program: row[4] || '',
+      major: row[5] || '',
+      tutees: row[6] ? JSON.parse(row[6]) : [],
+      isDeleted: row[7] === 'TRUE',
+      deletedAt: row[8] || '',
+      createdAt: row[9] || new Date().toISOString(),
+      updatedAt: row[10] || new Date().toISOString(),
+      substitutions: row[11] ? JSON.parse(row[11]) : [],
+    };
+  } catch (error) {
+    console.error('Error parsing tutor row:', row, error);
+    return null;
+  }
 };
 
 // Convert Tutee object to array for Google Sheets
@@ -113,5 +122,6 @@ export const tutorToRow = (tutor) => {
     tutor.deletedAt || '',
     tutor.createdAt || new Date().toISOString(),
     tutor.updatedAt || new Date().toISOString(),
+    JSON.stringify(tutor.substitutions || []),
   ];
 };

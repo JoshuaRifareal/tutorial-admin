@@ -58,9 +58,9 @@ const NumberInput = ({
   const isValid = !error || value === '' || value === null || value === undefined;
 
   return (
-    <div className={`inline-flex flex-col ${className}`}>
-      <div className="flex items-center gap-2">
-        {label && <span className="text-sm text-white/40">{label}</span>}
+    <div className={`inline-flex flex-col w-full ${className}`}>
+      <div className="flex items-center gap-2 w-full">
+        {label && <span className="text-sm text-white/40 whitespace-nowrap">{label}</span>}
         <input
           type="text"
           inputMode="numeric"
@@ -69,13 +69,15 @@ const NumberInput = ({
           onBlur={handleBlur}
           placeholder={placeholder}
           disabled={disabled}
-          className={`rounded-lg px-3 py-1.5 text-sm transition-colors focus:outline-none focus:border-purple-500 placeholder-white/30 w-20 ${
-            disabled ? 'opacity-50 cursor-not-allowed' : ''
-          } ${
+          className={`input-dark w-full ${
             isTouched && !isValid 
-              ? 'border-red-500 text-red-400 bg-white/5' 
-              : 'border border-white/10 text-white bg-white/5'
-          }`}
+              ? 'border-red-500 text-red-400' 
+              : ''
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          style={{
+            width: '100%',
+            minWidth: '0',
+          }}
         />
       </div>
       {isTouched && error && (

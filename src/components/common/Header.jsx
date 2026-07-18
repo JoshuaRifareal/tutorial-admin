@@ -1,23 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Zap, Settings, CheckCircle, Clock } from 'lucide-react';
+import { Bell, Settings, CheckCircle, Clock, LogOut, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/logo.png';
 
-const Header = ({ reminders = [], lastSync = new Date() }) => {
+const Header = ({ reminders = [], lastSync = new Date(), isConnected = true }) => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [showReminders, setShowReminders] = useState(false);
-  const [showConnection, setShowConnection] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const reminderRef = useRef(null);
-  const connectionRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (reminderRef.current && !reminderRef.current.contains(event.target)) {
         setShowReminders(false);
       }
-      if (connectionRef.current && !connectionRef.current.contains(event.target)) {
-        setShowConnection(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -26,12 +28,17 @@ const Header = ({ reminders = [], lastSync = new Date() }) => {
 
   const reminderCount = reminders.length;
 
+  // Get user avatar URL or fallback
+  const userAvatar = user?.picture || '';
+  const userEmail = user?.email || 'User';
+  const userName = user?.name || userEmail;
+
   return (
-    <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/10">
+    <header className="sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 py-3">
-        {/* Left: Logo with circle */}
+        {/* Left: Logo */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center">
             <img 
               src={logo} 
               alt="STS Admin" 
@@ -67,70 +74,106 @@ const Header = ({ reminders = [], lastSync = new Date() }) => {
 
             {/* Reminder Dropdown */}
             {showReminders && (
-                <div className="absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto dropdown-glass z-50 p-2">
-                    <div
-                        style={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-                            padding: '3px 2px',
-                        }}
-                    >
-                    <p className="text-sm font-medium text-white/80">Reminders</p>
-                    </div>
-                    {reminders.length > 0 ? (
-                    <div className="space-y-1 mt-1">
-                        {reminders.map((reminder, index) => (
-                        <button
-                            key={index}
-                            className="dropdown-item"
-                        >
-                            <p className="text-sm text-white/80">{reminder.message}</p>
-                            <p className="text-xs text-white/40 mt-0.5">{reminder.days} days remaining</p>
-                        </button>
-                        ))}
-                    </div>
-                    ) : (
-                    <p className="text-sm text-white/40 px-3 py-4 text-center">No upcoming reminders</p>
-                    )}
+              <div className="absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto dropdown-glass z-50 p-2">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium text-white/80">Reminders</p>
                 </div>
+
+                {/* Divider */}
+                <div className="border-t border-white/10 my-1" style={{opacity: 0.25}} />
+
+                {reminders.length > 0 ? (
+                  <div className="space-y-1 mt-1">
+                    {reminders.map((reminder, index) => (
+                      <button
+                        key={index}
+                        className="dropdown-item"
+                      >
+                        <p className="text-sm text-white/80">{reminder.message}</p>
+                        <p className="text-xs text-white/40 mt-0.5">{reminder.days} days remaining</p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-white/40 px-3 py-4 text-center">No upcoming reminders</p>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Connection Status */}
-          <div ref={connectionRef} className="relative">
+          {/* User Avatar with Connection & Logout */}
+          <div ref={userMenuRef} className="relative">
             <button
-              onClick={() => setShowConnection(!showConnection)}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors relative"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="relative p-1 hover:bg-white/10 rounded-full transition-colors"
             >
-              <Zap className="w-4 h-4 text-green-400" />
-              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              )}
+              {/* Connection status dot */}
+              <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#0a0a0a] ${
+                isConnected ? 'bg-green-400 animate-pulse' : 'bg-red-400'
+              }`} />
             </button>
 
-            {/* Connection Dropdown */}
-            {showConnection && (
-                <div className="absolute right-0 mt-2 w-64 dropdown-glass z-50 p-2">
-                    <div
-                        style={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-                            padding: '3px 2px',
-                        }}
-                    >
-                        <p className="text-sm font-medium text-white/80">Connection Status</p>
-                        </div>
-                        <div className="px-3 py-2 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-400" />
-                            <span className="text-sm text-white/80">Connection: OK</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-white/40" />
-                            <span className="text-sm text-white/60">
-                            Last sync: {formatDistanceToNow(lastSync, { addSuffix: true })}
-                            </span>
-                        </div>
+            {/* User Menu Dropdown */}
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-64 dropdown-glass z-50 p-2">
+                {/* User Info */}
+                <div className="px-3 py-2">
+                  <div className="flex items-center gap-3">
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white/80 truncate">{userName}</p>
+                      <p className="text-xs text-white/40 truncate">{userEmail}</p>
                     </div>
+                  </div>
                 </div>
+                
+                {/* Divider */}
+                <div className="border-t border-white/10 my-1" style={{opacity: 0.25}} />
+
+                {/* Connection Status */}
+                <div className="px-3 py-1 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className={`w-4 h-4 ${isConnected ? 'text-green-400' : 'text-red-400'}`} />
+                    <span className={`text-sm ${isConnected ? 'text-white/80' : 'text-red-400'}`}>
+                      Connection: {isConnected ? 'OK' : 'Error'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    logout();
+                  }}
+                  className="w-full flex items-center gap-2 px-3 py-1 rounded-lg text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
             )}
-            
           </div>
         </div>
       </div>

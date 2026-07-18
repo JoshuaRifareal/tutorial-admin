@@ -10,6 +10,8 @@ import Select from '../components/common/Select';
 import DatePicker from '../components/common/DatePicker';
 import TimePicker from '../components/common/TimePicker';
 import { format, parseISO } from 'date-fns';
+import HistoryButton from '../components/common/HistoryButton';
+import { logEvent } from '../services/auditService';
 
 const TuteeProfilePage = () => {
   const { id } = useParams();
@@ -197,6 +199,49 @@ const TuteeProfilePage = () => {
     }
   };
 
+  const handleRevert = async (entry) => {
+    if (!entry || !entry.changes) return;
+    
+    setIsSaving(true);
+    try {
+      // Create a new state with the changes applied
+      const revertedData = { ...tutee };
+      const changes = entry.changes || {};
+      
+      // Apply each change from the audit entry
+      Object.keys(changes).forEach(field => {
+        revertedData[field] = changes[field].new;
+      });
+      
+      // Update the profile
+      await updateTutee(id, revertedData);
+      
+      // Log the revert action
+      await logEvent({
+        entityType: 'tutee',
+        entityId: id,
+        action: 'revert',
+        changes: {
+          revertedTo: entry.id,
+          revertedFrom: new Date().toISOString(),
+          fields: Object.keys(changes)
+        },
+        userEmail: 'admin@example.com' // Get from auth context
+      });
+      
+      setIsEditing(false);
+      setTutee(revertedData);
+      
+      // Show success message
+      alert('Successfully reverted changes!');
+    } catch (error) {
+      console.error('Failed to revert:', error);
+      alert('Failed to revert changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading || !tutee) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
@@ -290,6 +335,12 @@ const TuteeProfilePage = () => {
             <span className="text-sm">Back to Tutees</span>
           </button>
           <div className="flex items-center gap-2">
+            <HistoryButton 
+              entityType="tutee"
+              entityId={id}
+              onRevert={handleRevert}
+              isAdmin={true} // You can set this based on user role
+            />
             {isEditing ? (
               <>
                 <button
@@ -444,7 +495,10 @@ const TuteeProfilePage = () => {
                             className="w-full"
                           />
                         ) : (
-                          <span className={isTBA ? 'text-white/30' : 'text-white/70 font-medium'}>
+                          <span style={{ 
+                            color: isTBA ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 1)',
+                            fontWeight: isTBA ? '400' : '500',
+                          }}>
                             {time}
                           </span>
                         )}

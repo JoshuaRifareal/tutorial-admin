@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { fetchSheetData, appendToSheet, updateSheetRange } from '../services/googleSheets';
 import { parseTuteeRow, tuteeToRow } from '../utils/dataHelpers';
 import { v4 as uuidv4 } from 'uuid';
+import { logEvent } from '../services/auditService';
 
 const useTuteeStore = create((set, get) => ({
   tutees: [],
@@ -84,6 +85,23 @@ const useTuteeStore = create((set, get) => ({
       }
       
       const oldTutee = state.tutees[index];
+      
+      // Track changes for audit log
+      const changes = {};
+      Object.keys(updatedData).forEach(key => {
+        // Compare old and new values
+        const oldValue = oldTutee[key];
+        const newValue = updatedData[key];
+        
+        // Only track if value actually changed
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changes[key] = { 
+            old: oldValue, 
+            new: newValue 
+          };
+        }
+      });
+      
       const updatedTutee = {
         ...oldTutee,
         ...updatedData,
@@ -100,6 +118,22 @@ const useTuteeStore = create((set, get) => ({
       // Update local state
       const newTutees = [...state.tutees];
       newTutees[index] = updatedTutee;
+      
+      // Log the changes if there are any
+      if (Object.keys(changes).length > 0) {
+        // Get user email from localStorage or auth context
+        const userEmail = localStorage.getItem('google_oauth_user') 
+          ? JSON.parse(localStorage.getItem('google_oauth_user')).email 
+          : 'system';
+        
+        await logEvent({
+          entityType: 'tutee',
+          entityId: id,
+          changes,
+          action: 'update',
+          userEmail: userEmail,
+        });
+      }
       
       set({ tutees: newTutees, isLoading: false });
       return updatedTutee;

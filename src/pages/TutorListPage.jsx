@@ -185,6 +185,7 @@ const TutorListPage = () => {
                   </th>
                 </tr>
               </thead>
+              
               <tbody>
                 {paginatedTutors.length === 0 ? (
                   <tr>
@@ -215,6 +216,7 @@ const TutorListPage = () => {
                   ))
                 )}
               </tbody>
+            
             </table>
           </div>
 

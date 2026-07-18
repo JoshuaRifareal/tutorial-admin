@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { setOAuthToken, clearOAuthToken } from '../../services/googleSheets';
+import { useAuth } from '../../context/AuthContext';
 
-const GoogleAuth = ({ children, onAuthChange }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+const GoogleAuth = ({ children }) => {
+  const { user, isAuthenticated, login, logout } = useAuth();
 
   // Check if token exists in localStorage on mount
   useEffect(() => {
@@ -13,29 +12,21 @@ const GoogleAuth = ({ children, onAuthChange }) => {
     const savedExpiry = localStorage.getItem('google_oauth_expiry');
     const savedUser = localStorage.getItem('google_oauth_user');
     
-    if (savedToken && savedExpiry && Date.now() < parseInt(savedExpiry)) {
-      setToken(savedToken);
+    if (savedToken && savedExpiry && Date.now() < parseInt(savedExpiry) && savedUser) {
       setOAuthToken(savedToken, (parseInt(savedExpiry) - Date.now()) / 1000);
-      setIsAuthenticated(true);
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+      // login should be defined here
+      if (login) {
+        login(JSON.parse(savedUser), savedToken, (parseInt(savedExpiry) - Date.now()) / 1000);
       }
-      if (onAuthChange) onAuthChange(true);
     }
-  }, []);
+  }, [login]);
 
-  const login = useGoogleLogin({
+  const googleLogin = useGoogleLogin({
     onSuccess: (response) => {
       const { access_token, expires_in } = response;
       
-      // Store token
-      setToken(access_token);
+      // Set OAuth token for API calls
       setOAuthToken(access_token, expires_in);
-      setIsAuthenticated(true);
-      
-      // Store in localStorage
-      localStorage.setItem('google_oauth_token', access_token);
-      localStorage.setItem('google_oauth_expiry', String(Date.now() + (expires_in * 1000)));
       
       // Get user info
       fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -45,36 +36,35 @@ const GoogleAuth = ({ children, onAuthChange }) => {
       })
       .then(res => res.json())
       .then(data => {
-        setUser(data);
-        localStorage.setItem('google_oauth_user', JSON.stringify(data));
-        if (onAuthChange) onAuthChange(true);
+        if (login) {
+          login(data, access_token, expires_in);
+        }
       })
       .catch(err => console.error('Failed to get user info:', err));
     },
     onError: (error) => {
       console.error('Login failed:', error);
-      if (onAuthChange) onAuthChange(false);
     },
     scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
   });
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
+  const handleLogout = () => {
     clearOAuthToken();
-    localStorage.removeItem('google_oauth_token');
-    localStorage.removeItem('google_oauth_expiry');
-    localStorage.removeItem('google_oauth_user');
-    if (onAuthChange) onAuthChange(false);
+    if (logout) {
+      logout();
+    }
   };
+
+  // Ensure login is defined before rendering children
+  if (!login) {
+    return null; // or loading state
+  }
 
   return children({
     isAuthenticated,
     user,
-    login,
-    logout,
-    token,
+    login: googleLogin,
+    logout: handleLogout,
   });
 };
 

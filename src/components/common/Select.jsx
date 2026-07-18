@@ -149,11 +149,11 @@ const Select = ({
   };
 
   return (
-    <div className={`relative inline-block ${className}`}>
+    <div className={`relative inline-block w-full ${className}`}>
       <button
         ref={buttonRef}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm transition-colors w-full ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/10'
         }`}
         style={{
@@ -162,8 +162,8 @@ const Select = ({
           color: value ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
         }}
       >
-        <span>{selectedOption?.label || placeholder}</span>
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="truncate flex-1 text-left">{selectedOption?.label || placeholder}</span>
+        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {renderDropdown()}
     </div>

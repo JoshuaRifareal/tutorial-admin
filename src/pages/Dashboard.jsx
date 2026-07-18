@@ -158,7 +158,7 @@ const Dashboard = () => {
   if (tuteesLoading || tutorsLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
-        <Header reminders={[]} lastSync={lastSync} />
+        <Header reminders={reminders} lastSync={lastSync} isConnected={true} />
         <div className="container mx-auto px-4 py-4 pb-32">
           <div className="grid grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => (
