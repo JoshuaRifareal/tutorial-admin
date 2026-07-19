@@ -12,7 +12,7 @@ function App() {
   return (
     <GoogleAuth>
       {({ isAuthenticated, login, logout, user }) => (
-        <div className="min-h-screen bg-[#0a0a0a]">
+        <div className="min-h-screen bg-app">
           {!isAuthenticated ? (
             <div className="flex items-center justify-center min-h-screen">
               <div className="glass-card p-8 text-center max-w-md w-full">

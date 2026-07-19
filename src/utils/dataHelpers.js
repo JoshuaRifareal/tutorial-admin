@@ -25,7 +25,7 @@ export const parseTuteeRow = (row) => {
         method: p.method || 'cash'
       })) : [],
       balance: parseFloat(row[13]) || 0,
-      renewalDate: row[14] || '',
+      renewalDate: row[14] || '',  // ← Make sure this exists
       tutorId: row[15] || '',
       isInGroupChat: row[16] === 'TRUE',
       hasAdmissionForm: row[17] === 'TRUE',
@@ -39,6 +39,7 @@ export const parseTuteeRow = (row) => {
       deletedAt: row[25] || '',
       createdAt: row[26] || new Date().toISOString(),
       updatedAt: row[27] || new Date().toISOString(),
+      modality: row[28] || '',  // ← Make sure this exists
     };
   } catch (error) {
     console.error('Error parsing tutee row:', row, error);
@@ -51,11 +52,8 @@ export const parseTutorRow = (row) => {
   if (!row || row.length < 8) return null;
   
   try {
-    const id = row[0] || `tutor_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-    console.log('Parsing tutor row, ID:', id);
-    
     return {
-      id: id,
+      id: row[0] || uuidv4(),
       firstName: row[1] || '',
       lastName: row[2] || '',
       school: row[3] || '',
@@ -89,9 +87,9 @@ export const tuteeToRow = (tutee) => {
     tutee.package,
     tutee.hoursPerSession.toString(),
     JSON.stringify(tutee.schedule || {}),
-    JSON.stringify(tutee.paymentRecord),
+    JSON.stringify(tutee.paymentRecord || []),
     tutee.balance.toString(),
-    tutee.renewalDate,
+    tutee.renewalDate || '',  // ← Make sure this exists
     tutee.tutorId || '',
     tutee.isInGroupChat ? 'TRUE' : 'FALSE',
     tutee.hasAdmissionForm ? 'TRUE' : 'FALSE',
@@ -105,6 +103,7 @@ export const tuteeToRow = (tutee) => {
     tutee.deletedAt || '',
     tutee.createdAt || new Date().toISOString(),
     tutee.updatedAt || new Date().toISOString(),
+    tutee.modality || '',  // ← Make sure this exists
   ];
 };
 

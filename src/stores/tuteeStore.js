@@ -19,11 +19,10 @@ const useTuteeStore = create((set, get) => ({
         set({ tutees: [], isLoading: false });
         return [];
       }
-      // Skip header row (first row)
       const dataRows = rows.slice(1);
       const tutees = dataRows
         .map(parseTuteeRow)
-        .filter(t => t !== null && !t.isDeleted);
+        .filter(t => t !== null && !t.isDeleted); // This filters out deleted entries
       
       set({ tutees, isLoading: false });
       return tutees;
@@ -32,7 +31,7 @@ const useTuteeStore = create((set, get) => ({
       set({ 
         error: error.message || 'Failed to fetch tutees', 
         isLoading: false,
-        tutees: [], // Set empty array on error
+        tutees: [],
       });
       throw error;
     }
@@ -53,9 +52,9 @@ const useTuteeStore = create((set, get) => ({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isDeleted: false,
-        paymentRecord: [],
-        balance: 0,
-        siblings: [],
+        paymentRecord: tuteeData.paymentRecord || [],
+        // Ensure balance is calculated if not provided
+        balance: tuteeData.balance || (tuteeData.rate * parseInt(tuteeData.package) || 0),
       };
       
       const row = tuteeToRow(newTutee);
@@ -89,6 +88,9 @@ const useTuteeStore = create((set, get) => ({
       // Track changes for audit log
       const changes = {};
       Object.keys(updatedData).forEach(key => {
+        // Skip updatedAt field
+        if (key === 'updatedAt') return;
+
         // Compare old and new values
         const oldValue = oldTutee[key];
         const newValue = updatedData[key];
@@ -110,7 +112,7 @@ const useTuteeStore = create((set, get) => ({
       
       // Find the row number in Google Sheets (index + 2 because of header and 0-index)
       const rowNumber = index + 2;
-      const range = `tutees!A${rowNumber}:AB${rowNumber}`;
+      const range = `tutees!A${rowNumber}:AC${rowNumber}`;
       const row = tuteeToRow(updatedTutee);
       
       await updateSheetRange(range, row);
@@ -163,12 +165,12 @@ const useTuteeStore = create((set, get) => ({
       
       const index = state.tutees.findIndex(t => t.id === id);
       const rowNumber = index + 2;
-      const range = `tutees!A${rowNumber}:AB${rowNumber}`;
+      const range = `tutees!A${rowNumber}:AC${rowNumber}`;
       const row = tuteeToRow(updatedTutee);
       
       await updateSheetRange(range, row);
       
-      // Update local state (filter out deleted)
+      // Update local state - filter out the deleted tutee
       set(state => ({
         tutees: state.tutees.filter(t => t.id !== id),
         isLoading: false,

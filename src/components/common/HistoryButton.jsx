@@ -105,7 +105,14 @@ const HistoryButton = ({ entityType, entityId, onRevert, isAdmin = false }) => {
 
     return (
       <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-        <div className="glass-card p-6 max-w-md w-full mx-4">
+        <div 
+          className="p-6 max-w-md w-full mx-4 rounded-xl"
+          style={{
+            backgroundColor: '#1a1a1a',
+            border: '1px solid rgba(255, 255, 255, 0.06)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+          }}
+        >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">⚠️ Revert Changes?</h3>
             <button
@@ -117,11 +124,12 @@ const HistoryButton = ({ entityType, entityId, onRevert, isAdmin = false }) => {
           </div>
           
           <p className="text-sm text-white/60 mb-4">
-            This will revert to the version from:
+            This will revert to the version from:{' '} 
+            <span className="text-sm text-white/80 font-medium mb-4">
+              {formatDate(selectedEntry.timestamp)}
+            </span>
           </p>
-          <p className="text-sm text-white/80 font-medium mb-4">
-            {formatDate(selectedEntry.timestamp)}
-          </p>
+          
           
           {hasChanges ? (
             <div className="bg-white/5 rounded-lg p-3 mb-4">
@@ -139,14 +147,11 @@ const HistoryButton = ({ entityType, entityId, onRevert, isAdmin = false }) => {
             <p className="text-sm text-white/40 mb-4">No changes to revert.</p>
           )}
           
-          <p className="text-xs text-white/30 mb-4">
-            This action will be recorded in the audit log.
-          </p>
-          
           <div className="flex gap-3">
             <button
               onClick={() => setShowRevertModal(false)}
               className="flex-1 px-4 py-2 rounded-lg text-sm text-white/60 hover:bg-white/10 transition-colors"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
             >
               Cancel
             </button>
@@ -277,26 +282,6 @@ const HistoryButton = ({ entityType, entityId, onRevert, isAdmin = false }) => {
 
               {/* Divider */}
               <div className="border-t border-white/10 mt-1" style={{opacity: 0.25}} />
-
-              {totalPages > 1 && (
-                <div className="flex items-center justify-end gap-1 mt-0.5">
-                  <button
-                    onClick={() => loadHistory(page - 1)}
-                    disabled={page <= 1}
-                    className="text-white/40 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                  </button>
-                  <span className="text-[10px] text-white/40">{page}/{totalPages}</span>
-                  <button
-                    onClick={() => loadHistory(page + 1)}
-                    disabled={page >= totalPages}
-                    className="text-white/40 hover:text-white/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
             </div>
 
             {loading ? (
@@ -342,7 +327,7 @@ const HistoryButton = ({ entityType, entityId, onRevert, isAdmin = false }) => {
 
             {/* Pagination at bottom */}
             {totalPages > 1 && (
-              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-center gap-1" style={{ borderTopColor: 'rgba(255, 255, 255, 0.06)', opacity: '0.25' }}>
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-end gap-1" style={{ borderTopColor: 'rgba(255, 255, 255, 0.06)' }}>
                 <button
                   onClick={() => loadHistory(page - 1)}
                   disabled={page <= 1}

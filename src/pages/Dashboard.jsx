@@ -205,7 +205,7 @@ const Dashboard = () => {
     );
   }
 
-  const activeTutees = tutees.filter(t => !t.isDeleted && t.status === 'active');
+  const activeTutees = tutees.filter(t => !t.isDeleted && t.status?.toLowerCase() === 'active');
   const pendingTutees = tutees.filter(t => !t.isDeleted && t.status === 'pending');
   const totalTutees = tutees.filter(t => !t.isDeleted).length;
   const totalTutors = tutors.filter(t => !t.isDeleted).length;

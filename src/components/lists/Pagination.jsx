@@ -4,7 +4,10 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
+    <div 
+      className="flex items-center justify-between px-4 py-3"
+      style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
+    >
       <p className="text-xs text-white/40">
         Page {currentPage} of {totalPages}
       </p>

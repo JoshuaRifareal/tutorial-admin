@@ -1,17 +1,55 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Edit2, Save, Calendar, DollarSign, Phone, Receipt, Users, Plus, X } from 'lucide-react';
+import { ArrowLeft, Edit2, Save, Calendar, DollarSign, Phone, Receipt, Users, Plus, X, Package } from 'lucide-react';
 import useTuteeStore from '../stores/tuteeStore';
 import useTutorStore from '../stores/tutorStore';
 import Header from '../components/common/Header';
 import BottomNav from '../components/common/BottomNav';
 import StatusChip from '../components/lists/StatusChip';
 import Select from '../components/common/Select';
+import NumberInput from '../components/common/NumberInput';
 import DatePicker from '../components/common/DatePicker';
-import TimePicker from '../components/common/TimePicker';
-import { format, parseISO } from 'date-fns';
 import HistoryButton from '../components/common/HistoryButton';
 import { logEvent } from '../services/auditService';
+import { format, parseISO } from 'date-fns';
+import ModalityPill from '../components/common/ModalityPill';
+import TimePicker from '../components/common/TimePicker';
+
+// Onboarding Pill component
+const OnboardingPill = ({ label, value, onClick, editable = false }) => {
+  const isActive = value;
+  
+  return (
+    <button
+      onClick={editable ? onClick : undefined}
+      disabled={!editable}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+        isActive 
+          ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+          : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+      } ${editable ? 'cursor-pointer hover:scale-105' : 'cursor-default'}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-400' : 'bg-gray-400'}`} />
+      {label}
+    </button>
+  );
+};
+
+// Field component for view mode - with rounded border and light gray bg
+const Field = ({ label, value, className = '' }) => (
+  <div className={className}>
+    <span className="text-[10px] text-white/40 block mb-0.5">{label}</span>
+    <div 
+      className="rounded-lg px-3 py-2 text-sm text-white/80 w-full truncate"
+      style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.02)',
+      }}
+    >
+      {value || '-'}
+    </div>
+  </div>
+);
 
 const TuteeProfilePage = () => {
   const { id } = useParams();
@@ -23,22 +61,36 @@ const TuteeProfilePage = () => {
   const [formData, setFormData] = useState(null);
   const [tutee, setTutee] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [newPaymentIndices, setNewPaymentIndices] = useState([]);
+  const [invalidPaymentIndices, setInvalidPaymentIndices] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // Substitution state
+  const [substitutions, setSubstitutions] = useState([]);
+  const [newSubstitution, setNewSubstitution] = useState({
+    substituteTutorId: '',
+    tuteeId: '',
+    date: '',
+    hours: 1,
+  });
 
   useEffect(() => {
-    fetchTutees();
-    fetchTutors();
+    const loadData = async () => {
+      await Promise.all([fetchTutees(), fetchTutors()]);
+      setDataLoaded(true);
+    };
+    loadData();
   }, []);
 
   useEffect(() => {
-    if (tutees.length > 0 && id) {
+    if (dataLoaded && tutees.length > 0 && id) {
       const found = tutees.find(t => t.id === id);
       if (found) {
         setTutee(found);
         setFormData({ ...found });
       }
     }
-  }, [tutees, id]);
+  }, [dataLoaded, tutees, id]);
 
   const getTutorName = (tutorId) => {
     const tutor = tutors.find(t => t.id === tutorId);
@@ -55,87 +107,44 @@ const TuteeProfilePage = () => {
       .filter(Boolean);
   };
 
-  const getDaySchedule = (day) => {
-    const schedule = tutee?.schedule || {};
-    return schedule[day] || 'TBA';
-  };
-
-  const validateNumber = (field, value, min, max, required = false) => {
-    if (value === '' || value === null || value === undefined) {
-      if (required) {
-        setErrors(prev => ({ ...prev, [field]: 'This field is required' }));
-        return false;
-      }
-      setErrors(prev => ({ ...prev, [field]: '' }));
-      return true;
-    }
-    
-    const num = Number(value);
-    if (isNaN(num)) {
-      setErrors(prev => ({ ...prev, [field]: 'Must be a valid number' }));
-      return false;
-    }
-    
-    if (!Number.isInteger(num)) {
-      setErrors(prev => ({ ...prev, [field]: 'Must be a whole number' }));
-      return false;
-    }
-    
-    if (min !== undefined && num < min) {
-      setErrors(prev => ({ ...prev, [field]: `Minimum is ${min}` }));
-      return false;
-    }
-    
-    if (max !== undefined && num > max) {
-      setErrors(prev => ({ ...prev, [field]: `Maximum is ${max}` }));
-      return false;
-    }
-    
-    setErrors(prev => ({ ...prev, [field]: '' }));
-    return true;
-  };
-
-  const handleNumberChange = (field, value, min, max, required = false) => {
-    handleChange(field, value);
-    validateNumber(field, value, min, max, required);
-  };
-
   const handleEdit = () => {
     setIsEditing(true);
     setFormData({ ...tutee });
-    setErrors({});
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setFormData({ ...tutee });
-    setErrors({});
   };
 
   const handleSave = async () => {
     if (!formData) return;
     
-    // Validate all number fields
-    const isValid = 
-      validateNumber('gradeLevel', formData.gradeLevel, 1, 12) &&
-      validateNumber('rate', formData.rate, 0) &&
-      validateNumber('balance', formData.balance, 0);
+    // Validate payment rows
+    const invalidIndices = [];
+    const paymentRecords = formData.paymentRecord || [];
     
-    // Validate payment amounts
-    let paymentsValid = true;
-    if (formData.paymentRecord) {
-      formData.paymentRecord.forEach((payment, idx) => {
-        if (payment.amount !== '' && payment.amount !== null && payment.amount !== undefined) {
-          const valid = validateNumber(`payment_${idx}`, payment.amount, 0, undefined, true);
-          if (!valid) paymentsValid = false;
+    paymentRecords.forEach((payment, index) => {
+      if (!payment.amount || payment.amount === '' || !payment.date) {
+        invalidIndices.push(index);
+      }
+    });
+    
+    if (invalidIndices.length > 0) {
+      setInvalidPaymentIndices(invalidIndices);
+      setTimeout(() => {
+        const element = document.getElementById(`payment-row-${invalidIndices[0]}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      });
-    }
-    
-    if (!isValid || !paymentsValid) {
+      }, 100);
+      setTimeout(() => {
+        setInvalidPaymentIndices([]);
+      }, 5000);
       return;
     }
     
+    setInvalidPaymentIndices([]);
     setIsSaving(true);
     try {
       await updateTutee(id, formData);
@@ -167,6 +176,48 @@ const TuteeProfilePage = () => {
     });
   };
 
+  const handleRevert = async (entry) => {
+    if (!entry || !entry.changes) return;
+    
+    setIsSaving(true);
+    try {
+      const revertedData = { ...tutee };
+      const changes = entry.changes || {};
+      
+      Object.keys(changes).forEach(field => {
+        revertedData[field] = changes[field].new;
+      });
+      
+      await updateTutee(id, revertedData);
+      
+      const userEmail = localStorage.getItem('google_oauth_user') 
+        ? JSON.parse(localStorage.getItem('google_oauth_user')).email 
+        : 'system';
+      
+      await logEvent({
+        entityType: 'tutee',
+        entityId: id,
+        action: 'revert',
+        changes: {
+          revertedTo: entry.id,
+          revertedFrom: new Date().toISOString(),
+          fields: Object.keys(changes)
+        },
+        userEmail: userEmail,
+      });
+      
+      setIsEditing(false);
+      setTutee(revertedData);
+      alert('Successfully reverted changes!');
+    } catch (error) {
+      console.error('Failed to revert:', error);
+      alert('Failed to revert changes. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Payment handlers
   const handleAddPayment = () => {
     const newPayment = {
       amount: '',
@@ -174,10 +225,18 @@ const TuteeProfilePage = () => {
       date: new Date().toISOString().split('T')[0],
       method: 'cash'
     };
+    
     setFormData(prev => ({
       ...prev,
       paymentRecord: [...(prev.paymentRecord || []), newPayment]
     }));
+    
+    const newIndex = (formData?.paymentRecord?.length || 0);
+    setNewPaymentIndices(prev => [...prev, newIndex]);
+    
+    setTimeout(() => {
+      setNewPaymentIndices(prev => prev.filter(i => i !== newIndex));
+    }, 3000);
   };
 
   const handleRemovePayment = (index) => {
@@ -193,56 +252,9 @@ const TuteeProfilePage = () => {
       records[index] = { ...records[index], [field]: value };
       return { ...prev, paymentRecord: records };
     });
-    
-    if (field === 'amount') {
-      validateNumber(`payment_${index}`, value, 0, undefined, true);
-    }
   };
 
-  const handleRevert = async (entry) => {
-    if (!entry || !entry.changes) return;
-    
-    setIsSaving(true);
-    try {
-      // Create a new state with the changes applied
-      const revertedData = { ...tutee };
-      const changes = entry.changes || {};
-      
-      // Apply each change from the audit entry
-      Object.keys(changes).forEach(field => {
-        revertedData[field] = changes[field].new;
-      });
-      
-      // Update the profile
-      await updateTutee(id, revertedData);
-      
-      // Log the revert action
-      await logEvent({
-        entityType: 'tutee',
-        entityId: id,
-        action: 'revert',
-        changes: {
-          revertedTo: entry.id,
-          revertedFrom: new Date().toISOString(),
-          fields: Object.keys(changes)
-        },
-        userEmail: 'admin@example.com' // Get from auth context
-      });
-      
-      setIsEditing(false);
-      setTutee(revertedData);
-      
-      // Show success message
-      alert('Successfully reverted changes!');
-    } catch (error) {
-      console.error('Failed to revert:', error);
-      alert('Failed to revert changes. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading || !tutee) {
+  if (isLoading || !dataLoaded || !tutee) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
         <Header />
@@ -267,7 +279,6 @@ const TuteeProfilePage = () => {
     );
   }
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const siblingNames = getSiblingNames(tutee.siblings || []);
   const currentData = isEditing ? formData : tutee;
 
@@ -299,25 +310,13 @@ const TuteeProfilePage = () => {
     { value: 'online', label: 'Online' },
   ];
 
-  // Helper to render number input with validation
-  const renderNumberInput = (field, value, placeholder, min, max, required = false) => {
-    const hasError = errors[field] && errors[field] !== '';
-    
-    return (
-      <div className="inline-flex flex-col">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value || ''}
-          onChange={(e) => handleNumberChange(field, e.target.value, min, max, required)}
-          placeholder={placeholder}
-          className={`input-number ${hasError ? 'error' : ''}`}
-        />
-        {hasError && (
-          <span className="input-error-text">{errors[field]}</span>
-        )}
-      </div>
-    );
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return format(parseISO(dateString), 'MMM d, yyyy');
+    } catch {
+      return '-';
+    }
   };
 
   return (
@@ -339,7 +338,7 @@ const TuteeProfilePage = () => {
               entityType="tutee"
               entityId={id}
               onRevert={handleRevert}
-              isAdmin={true} // You can set this based on user role
+              isAdmin={true}
             />
             {isEditing ? (
               <>
@@ -379,38 +378,63 @@ const TuteeProfilePage = () => {
             </div>
             <div className="flex-1 min-w-0">
               {isEditing ? (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={currentData.firstName || ''}
-                      onChange={(e) => handleChange('firstName', e.target.value)}
-                      placeholder="First Name"
-                      className="input-dark"
-                    />
-                    <input
-                      type="text"
-                      value={currentData.lastName || ''}
-                      onChange={(e) => handleChange('lastName', e.target.value)}
-                      placeholder="Last Name"
-                      className="input-dark"
-                    />
+                <div className="space-y-3">
+                  {/* Row 1: First Name + Last Name */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-white/40 block mb-0.5">First Name</span>
+                      <input
+                        type="text"
+                        value={currentData.firstName || ''}
+                        onChange={(e) => handleChange('firstName', e.target.value)}
+                        placeholder="First Name"
+                        className="input-dark w-full"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-white/40 block mb-0.5">Last Name</span>
+                      <input
+                        type="text"
+                        value={currentData.lastName || ''}
+                        onChange={(e) => handleChange('lastName', e.target.value)}
+                        placeholder="Last Name"
+                        className="input-dark w-full"
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Select
-                      value={currentData.status || 'pending'}
-                      onChange={(val) => handleChange('status', val)}
-                      options={statusOptions}
-                      className="min-w-[100px]"
-                    />
-                    {renderNumberInput('gradeLevel', currentData.gradeLevel, 'Grade', 1, 12)}
+                  
+                  {/* Row 2: Status + Grade */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-white/40 block mb-0.5">Status</span>
+                      <Select
+                        value={currentData.status || 'pending'}
+                        onChange={(val) => handleChange('status', val)}
+                        options={statusOptions}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-white/40 block mb-0.5">Grade</span>
+                      <input
+                        type="text"
+                        value={currentData.gradeLevel || ''}
+                        onChange={(e) => handleChange('gradeLevel', e.target.value)}
+                        placeholder="Grade"
+                        className="input-dark w-full"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Row 3: School */}
+                  <div>
+                    <span className="text-[10px] text-white/40 block mb-0.5">School</span>
                     <input
                       type="text"
                       value={currentData.school || ''}
                       onChange={(e) => handleChange('school', e.target.value)}
                       placeholder="School"
-                      className="input-dark"
-                      style={{ flex: 1, minWidth: '120px' }}
+                      className="input-dark w-full"
                     />
                   </div>
                 </div>
@@ -439,208 +463,365 @@ const TuteeProfilePage = () => {
             <h3 className="text-sm font-medium text-white/80">Schedule & Tutor</h3>
           </div>
           
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm text-white/60">Tutor:</span>
-            {isEditing ? (
-              <Select
-                value={currentData.tutorId || ''}
-                onChange={(val) => handleChange('tutorId', val)}
-                options={[
-                  { value: '', label: 'Unassigned' },
-                  ...tutors.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }))
-                ]}
-                className="min-w-[150px]"
-              />
-            ) : (
-              <span className="text-sm text-white/80 font-medium">{getTutorName(currentData.tutorId)}</span>
-            )}
-          </div>
+          {/* Tutor + Modality Row */}
+          {isEditing ? (
+            <div className="grid grid-cols-4 gap-3 mb-3">
+              <div className="col-span-3">
+                <span className="text-[10px] text-white/40 block mb-0.5">Tutor</span>
+                <Select
+                  value={currentData.tutorId || ''}
+                  onChange={(val) => handleChange('tutorId', val)}
+                  options={[
+                    { value: '', label: 'Unassigned' },
+                    ...tutors.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }))
+                  ]}
+                  placeholder="Select tutor"
+                  className="w-full"
+                />
+              </div>
+              <div className="col-span-1">
+                <span className="text-[10px] text-white/40 block mb-0.5">Modality</span>
+                <Select
+                  value={currentData.modality || ''}
+                  onChange={(val) => handleChange('modality', val)}
+                  options={[
+                    { value: '', label: 'Select' },
+                    { value: 'F2F', label: 'F2F' },
+                    { value: 'ON', label: 'ON' },
+                    { value: 'HB', label: 'HB' },
+                  ]}
+                  placeholder="Select"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm text-white/60">Tutor:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white/80 font-medium">{getTutorName(currentData.tutorId)}</span>
+                {currentData.modality && <ModalityPill modality={currentData.modality} />}
+              </div>
+            </div>
+          )}
           
           {/* Schedule Table */}
           <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  {days.map((day) => (
-                    <th 
-                      key={day} 
-                      className="text-center py-2 px-2 text-[10px] font-medium text-white/40"
-                      style={{ borderRight: '1px solid rgba(255, 255, 255, 0.06)' }}
-                    >
-                      {day}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {days.map((day, index) => {
-                    const schedule = currentData.schedule || {};
-                    const time = schedule[day] || 'TBA';
-                    const isTBA = time === 'TBA';
-                    
-                    return (
-                      <td 
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse min-w-[420px]">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <th 
                         key={day} 
-                        className="text-center py-2 px-2 text-xs"
-                        style={{ 
-                          borderRight: index < days.length - 1 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
-                        }}
+                        className="text-center py-2 px-2 text-[10px] font-medium text-white/40"
+                        style={{ borderRight: '1px solid rgba(255, 255, 255, 0.06)' }}
                       >
-                        {isEditing ? (
-                          <TimePicker
-                            value={schedule[day] || ''}
-                            onChange={(val) => handleScheduleChange(day, val)}
-                            placeholder="TBA"
-                            className="w-full"
-                          />
-                        ) : (
-                          <span style={{ 
-                            color: isTBA ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 1)',
-                            fontWeight: isTBA ? '400' : '500',
-                          }}>
-                            {time}
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
+                        {day}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                      const schedule = currentData.schedule || {};
+                      const dayValue = schedule[day] || 'TBA';
+                      
+                      // Check if value is an object with start/end
+                      const isRange = typeof dayValue === 'object' && dayValue !== null && dayValue.start;
+                      const displayTime = isRange 
+                        ? `${dayValue.start} → ${dayValue.end || '...'}`
+                        : dayValue;
+                      const isTBA = displayTime === 'TBA';
+                      
+                      return (
+                        <td 
+                          key={day} 
+                          className="text-center py-2 px-2 text-xs align-middle"
+                          style={{ 
+                            borderRight: index < 5 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                          }}
+                        >
+                          {isEditing ? (
+                            <TimePicker
+                              value={dayValue}
+                              onChange={(val) => handleScheduleChange(day, val)}
+                              placeholder="TBA"
+                              className="w-full"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center leading-tight">
+                              {isRange ? (
+                                <>
+                                  <span style={{ 
+                                    color: 'rgba(255,255,255,0.9)',
+                                    fontWeight: '600',
+                                    fontSize: '12px',
+                                    lineHeight: '1.3',
+                                  }}>
+                                    {dayValue.start}
+                                  </span>
+                                  <span style={{ 
+                                    color: 'rgba(255,255,255,0.3)',
+                                    fontSize: '8px',
+                                    lineHeight: '1.2',
+                                  }}>
+                                    →
+                                  </span>
+                                  <span style={{ 
+                                    color: 'rgba(255,255,255,0.9)',
+                                    fontWeight: '600',
+                                    fontSize: '12px',
+                                    lineHeight: '1.3',
+                                  }}>
+                                    {dayValue.end}
+                                  </span>
+                                </>
+                              ) : (
+                                <span style={{ 
+                                  color: isTBA ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.85)',
+                                  fontWeight: isTBA ? '400' : '600',
+                                  fontSize: '12px',
+                                }}>
+                                  {displayTime}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        {/* Card 2: Enrollment Information */}
+        {/* Card 2: Enrollment Information - Grid Layout */}
         <div className="glass-card p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-4 h-4 text-white/40" />
             <h3 className="text-sm font-medium text-white/80">Enrollment Information</h3>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Rate:</span>
-              {isEditing ? (
-                renderNumberInput('rate', currentData.rate, '0', 0)
-              ) : (
-                <span className="text-white/80">₱{currentData.rate || 0}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Package:</span>
-              {isEditing ? (
+          
+          {isEditing ? (
+            // Edit Mode - Grid with inputs
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Enrollment</span>
+                <DatePicker
+                  value={currentData.enrollmentDate || ''}
+                  onChange={(val) => handleChange('enrollmentDate', val)}
+                  placeholder="Select date"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Start</span>
+                <DatePicker
+                  value={currentData.startDate || ''}
+                  onChange={(val) => handleChange('startDate', val)}
+                  placeholder="Select date"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">End</span>
+                <DatePicker
+                  value={currentData.endDate || ''}
+                  onChange={(val) => handleChange('endDate', val)}
+                  placeholder="Select date"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Renewal</span>
+                <DatePicker
+                  value={currentData.renewalDate || ''}
+                  onChange={(val) => handleChange('renewalDate', val)}
+                  placeholder="Select date"
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Rate</span>
+                <NumberInput
+                  value={currentData.rate || ''}
+                  onChange={(val) => handleChange('rate', parseFloat(val) || 0)}
+                  placeholder="0"
+                  min={0}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Package</span>
                 <Select
                   value={currentData.package || ''}
                   onChange={(val) => handleChange('package', val)}
                   options={packageOptions}
                   placeholder="Select"
-                  className="w-24"
+                  className="w-full"
                 />
-              ) : (
-                <span className="text-white/80">{currentData.package || '-'} hrs</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Hrs/Session:</span>
-              {isEditing ? (
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Hrs/Session</span>
                 <Select
                   value={currentData.hoursPerSession || 1}
                   onChange={(val) => handleChange('hoursPerSession', parseFloat(val))}
                   options={hoursOptions}
-                  className="w-24"
+                  className="w-full"
                 />
-              ) : (
-                <span className="text-white/80">{currentData.hoursPerSession || 1} hr</span>
-              )}
+              </div>
+              <div>
+                <span className="text-[10px] text-white/40 block mb-0.5">Balance</span>
+                <NumberInput
+                  value={currentData.balance || ''}
+                  onChange={(val) => handleChange('balance', parseFloat(val) || 0)}
+                  placeholder="0"
+                  min={0}
+                  className="w-full"
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Balance:</span>
-              {isEditing ? (
-                renderNumberInput('balance', currentData.balance, '0', 0)
-              ) : (
-                <span className="text-white/80">₱{currentData.balance || 0}</span>
-              )}
+          ) : (
+            // View Mode - Grid with fields
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <Field label="Enrollment" value={formatDate(currentData.enrollmentDate)} />
+              <Field label="Start" value={formatDate(currentData.startDate)} />
+              <Field label="End" value={formatDate(currentData.endDate)} />
+              <Field label="Renewal" value={formatDate(currentData.renewalDate)} />
+              <Field label="Rate" value={currentData.rate ? `₱${currentData.rate}` : '-'} />
+              <Field label="Package" value={currentData.package ? `${currentData.package} hrs` : '-'} />
+              <Field label="Hrs/Session" value={currentData.hoursPerSession ? `${currentData.hoursPerSession} hr` : '-'} />
+              <Field label="Balance" value={currentData.balance ? `₱${currentData.balance}` : '₱0'} />
             </div>
+          )}
+        </div>
+
+        {/* Card 3: Onboarding Kit */}
+        <div className="glass-card p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Package className="w-4 h-4 text-white/40" />
+            <h3 className="text-sm font-medium text-white/80">Onboarding Kit</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <OnboardingPill
+              label="Group Chat"
+              value={currentData.isInGroupChat || false}
+              onClick={() => handleChange('isInGroupChat', !currentData.isInGroupChat)}
+              editable={isEditing}
+            />
+            <OnboardingPill
+              label="Admission Form"
+              value={currentData.hasAdmissionForm || false}
+              onClick={() => handleChange('hasAdmissionForm', !currentData.hasAdmissionForm)}
+              editable={isEditing}
+            />
+            <OnboardingPill
+              label="Policies Received"
+              value={currentData.hasPolicies || false}
+              onClick={() => handleChange('hasPolicies', !currentData.hasPolicies)}
+              editable={isEditing}
+            />
           </div>
         </div>
 
-        {/* Card 3: Contact Information */}
+        {/* Card 4: Contact Information - Grid Layout */}
         <div className="glass-card p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Phone className="w-4 h-4 text-white/40" />
             <h3 className="text-sm font-medium text-white/80">Contact Information</h3>
           </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Name:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={currentData.guardianName || ''}
-                  onChange={(e) => handleChange('guardianName', e.target.value)}
-                  placeholder="Guardian Name"
-                  className="input-dark-sm"
-                  style={{ width: '200px' }}
-                />
-              ) : (
-                <span className="text-white/80">{currentData.guardianName || '-'}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Contact:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={currentData.guardianContact || ''}
-                  onChange={(e) => handleChange('guardianContact', e.target.value)}
-                  placeholder="Contact Number"
-                  className="input-dark-sm"
-                  style={{ width: '200px' }}
-                />
-              ) : (
-                <span className="text-white/80">{currentData.guardianContact || '-'}</span>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-white/40">Emergency:</span>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={currentData.emergencyContact || ''}
-                  onChange={(e) => handleChange('emergencyContact', e.target.value)}
-                  placeholder="Emergency Contact"
-                  className="input-dark-sm"
-                  style={{ width: '200px' }}
-                />
-              ) : (
-                <span className="text-white/80">{currentData.emergencyContact || '-'}</span>
-              )}
-            </div>
-            {siblingNames.length > 0 && (
-              <div className="pt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-sm text-white/40">Siblings:</span>
+          
+          {isEditing ? (
+            // Edit Mode - Grid with inputs
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+                <div>
+                  <span className="text-[10px] text-white/40 block mb-0.5">Guardian Name</span>
+                  <input
+                    type="text"
+                    value={currentData.guardianName || ''}
+                    onChange={(e) => handleChange('guardianName', e.target.value)}
+                    placeholder="Guardian Name"
+                    className="input-dark w-full"
+                  />
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {siblingNames.map((name, idx) => (
-                    <span 
-                      key={idx} 
-                      className="text-xs px-3 py-1 rounded-full text-white/70"
-                      style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                      }}
-                    >
-                      {name}
-                    </span>
-                  ))}
+                <div>
+                  <span className="text-[10px] text-white/40 block mb-0.5">Contact Number</span>
+                  <input
+                    type="text"
+                    value={currentData.guardianContact || ''}
+                    onChange={(e) => handleChange('guardianContact', e.target.value)}
+                    placeholder="Contact Number"
+                    className="input-dark w-full"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-white/40 block mb-0.5">Emergency Contact</span>
+                  <input
+                    type="text"
+                    value={currentData.emergencyContact || ''}
+                    onChange={(e) => handleChange('emergencyContact', e.target.value)}
+                    placeholder="Emergency Contact"
+                    className="input-dark w-full"
+                  />
                 </div>
               </div>
-            )}
-          </div>
+              {siblingNames.length > 0 && (
+                <div className="pt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <span className="text-[10px] text-white/40 block mb-1">Siblings</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {siblingNames.map((name, idx) => (
+                      <span 
+                        key={idx} 
+                        className="text-xs px-3 py-1 rounded-full text-white/70"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.06)',
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            // View Mode - Grid with fields
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <Field label="Guardian Name" value={currentData.guardianName || '-'} />
+                <Field label="Contact Number" value={currentData.guardianContact || '-'} />
+                <Field label="Emergency Contact" value={currentData.emergencyContact || '-'} />
+              </div>
+              {siblingNames.length > 0 && (
+                <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                  <span className="text-[10px] text-white/40 block mb-1">Siblings</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {siblingNames.map((name, idx) => (
+                      <span 
+                        key={idx} 
+                        className="text-xs px-3 py-1 rounded-full text-white/70"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                          border: '1px solid rgba(255, 255, 255, 0.06)',
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Card 4: Payment History */}
+        {/* Card 5: Payment History */}
         <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -676,11 +857,24 @@ const TuteeProfilePage = () => {
                   </thead>
                   <tbody>
                     {(currentData.paymentRecord || []).map((payment, idx) => {
-                      const hasError = errors[`payment_${idx}`] && errors[`payment_${idx}`] !== '';
+                      const isNewRow = newPaymentIndices.includes(idx);
+                      const isInvalidRow = invalidPaymentIndices.includes(idx);
+                      
                       return (
                         <tr 
                           key={idx} 
-                          style={{ borderTop: idx > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none' }}
+                          id={`payment-row-${idx}`}
+                          style={{ 
+                            borderTop: idx > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                            backgroundColor: isNewRow ? 'rgba(34, 197, 94, 0.05)' : 
+                                          isInvalidRow ? 'rgba(239, 68, 68, 0.05)' : 
+                                          'transparent',
+                            borderLeft: isNewRow ? '2px solid #4ade80' : 
+                                      isInvalidRow ? '2px solid #ef4444' : 
+                                      'none',
+                            transition: 'all 0.3s ease',
+                          }}
+                          className={`${isNewRow ? 'pulse-green' : ''} ${isInvalidRow ? 'pulse-red' : ''}`}
                         >
                           <td className="py-2 px-3 text-xs text-white/60">
                             {isEditing ? (
@@ -688,29 +882,24 @@ const TuteeProfilePage = () => {
                                 value={payment.date || ''}
                                 onChange={(val) => handlePaymentChange(idx, 'date', val)}
                                 placeholder="Select date"
-                                className="w-32"
+                                className="min-w-[120px] w-full"
                               />
                             ) : (
                               payment.date ? format(parseISO(payment.date), 'MMM d, yyyy') : '-'
                             )}
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-2 px-3 text-xs text-white/80 font-medium">
                             {isEditing ? (
-                              <div className="inline-flex flex-col">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={payment.amount || ''}
-                                  onChange={(e) => handlePaymentChange(idx, 'amount', e.target.value)}
-                                  placeholder="0"
-                                  className={`input-number ${hasError ? 'error' : ''}`}
-                                />
-                                {hasError && (
-                                  <span className="input-error-text">{errors[`payment_${idx}`]}</span>
-                                )}
-                              </div>
+                              <NumberInput
+                                value={payment.amount || ''}
+                                onChange={(val) => handlePaymentChange(idx, 'amount', val)}
+                                placeholder="0"
+                                min={0}
+                                required
+                                className="min-w-[80px] w-full"
+                              />
                             ) : (
-                              <span className="text-xs text-white/80 font-medium">₱{payment.amount || 0}</span>
+                              `₱${payment.amount || 0}`
                             )}
                           </td>
                           <td className="py-2 px-3">
@@ -719,7 +908,7 @@ const TuteeProfilePage = () => {
                                 value={payment.type || 'full'}
                                 onChange={(val) => handlePaymentChange(idx, 'type', val)}
                                 options={paymentTypeOptions}
-                                className="w-24"
+                                className="min-w-[90px] w-full"
                               />
                             ) : (
                               <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -737,7 +926,7 @@ const TuteeProfilePage = () => {
                                 value={payment.method || 'cash'}
                                 onChange={(val) => handlePaymentChange(idx, 'method', val)}
                                 options={paymentMethodOptions}
-                                className="w-24"
+                                className="min-w-[90px] w-full"
                               />
                             ) : (
                               <span className="text-xs text-white/40">{payment.method || 'Cash'}</span>

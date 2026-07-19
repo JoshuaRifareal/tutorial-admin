@@ -85,6 +85,9 @@ const useTutorStore = create((set, get) => ({
       // Track changes for audit log
       const changes = {};
       Object.keys(updatedData).forEach(key => {
+        // Skip updatedAt field
+        if (key === 'updatedAt') return;
+
         const oldValue = oldTutor[key];
         const newValue = updatedData[key];
         

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Edit2, Save, User, Calendar, Users, Plus, X } from 'lucide-react';
 import useTutorStore from '../stores/tutorStore';
@@ -10,9 +10,9 @@ import Select from '../components/common/Select';
 import NumberInput from '../components/common/NumberInput';
 import DatePicker from '../components/common/DatePicker';
 import HistoryButton from '../components/common/HistoryButton';
+import ModalityPill from '../components/common/ModalityPill';
 import { logEvent } from '../services/auditService';
 import { format, parseISO } from 'date-fns';
-import { ArrowUpDown } from 'lucide-react';
 
 const TutorProfilePage = () => {
   const { id } = useParams();
@@ -28,7 +28,6 @@ const TutorProfilePage = () => {
   const [showAddTutee, setShowAddTutee] = useState(false);
   const [selectedTuteeToAdd, setSelectedTuteeToAdd] = useState('');
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [sortDirection, setSortDirection] = useState('desc'); // 'asc' or 'desc'
 
   // Substitution state
   const [substitutions, setSubstitutions] = useState([]);
@@ -78,6 +77,7 @@ const TutorProfilePage = () => {
 
   // Get assigned tutees with details
   const getAssignedTutees = () => {
+    if (!dataLoaded) return [];
     if (!tutor || !tutor.tutees || !Array.isArray(tutor.tutees)) return [];
     return tutor.tutees
       .map(id => tutees.find(t => t.id === id))
@@ -88,6 +88,18 @@ const TutorProfilePage = () => {
   const getUnassignedTutees = () => {
     const assignedIds = tutor?.tutees || [];
     return tutees.filter(t => !assignedIds.includes(t.id) && !t.isDeleted);
+  };
+
+  // Get unique modalities from assigned tutees
+  const getTutorModalities = () => {
+    if (!assignedTutees || assignedTutees.length === 0) return [];
+    const modalities = new Set();
+    assignedTutees.forEach(tutee => {
+      if (tutee.modality) {
+        modalities.add(tutee.modality);
+      }
+    });
+    return Array.from(modalities);
   };
 
   const handleEdit = () => {
@@ -222,24 +234,11 @@ const TutorProfilePage = () => {
     }
   };
 
-  // Sort function
-  const getSortedSubstitutions = () => {
-    if (!sortDirection) return substitutions;
-    
-    return [...substitutions].sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-  };
+  const assignedTutees = getAssignedTutees();
+  const unassignedTutees = getUnassignedTutees();
+  const currentData = isEditing ? formData : tutor;
 
-  const toggleSort = () => {
-    setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
-const sortedSubstitutions = getSortedSubstitutions();
-
-  if (isLoading || !dataLoaded) {
+  if (isLoading || !dataLoaded || !tutor) {
     return (
       <div className="min-h-screen bg-[#0a0a0a]">
         <Header />
@@ -263,30 +262,6 @@ const sortedSubstitutions = getSortedSubstitutions();
       </div>
     );
   }
-
-  if (!tutor) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a]">
-        <Header />
-        <div className="container max-w-2xl mx-auto px-4 py-4 pb-32">
-          <div className="glass-card p-6 text-center">
-            <p className="text-white/60">Tutor not found</p>
-            <button
-              onClick={() => navigate('/tutors')}
-              className="btn-primary mt-4 text-sm px-4 py-2"
-            >
-              Back to Tutors
-            </button>
-          </div>
-        </div>
-        <BottomNav />
-      </div>
-    );
-  }
-
-  const assignedTutees = getAssignedTutees();
-  const unassignedTutees = getUnassignedTutees();
-  const currentData = isEditing ? formData : tutor;
 
   // Filter options
   const tutorOptions = tutors
@@ -411,6 +386,12 @@ const sortedSubstitutions = getSortedSubstitutions();
                     {currentData.firstName} {currentData.lastName}
                   </h1>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <div className="flex flex-wrap gap-1">
+                      {getTutorModalities().map((mod, idx) => (
+                        <ModalityPill key={idx} modality={mod} />
+                      ))}
+                    </div>
+                    <span className="text-sm text-white/40">|</span>
                     <span className="text-sm text-white/60">{currentData.school || '-'}</span>
                     <span className="text-sm text-white/40">|</span>
                     <span className="text-sm text-white/60">{currentData.program || '-'}</span>
@@ -424,91 +405,91 @@ const sortedSubstitutions = getSortedSubstitutions();
         </div>
 
         {/* Card 2: Schedule */}
-        <div className="glass-card p-5 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="w-4 h-4 text-white/40" />
-            <h3 className="text-sm font-medium text-white/80">Schedule</h3>
-          </div>
-          
-          <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                    <th 
-                      key={day} 
-                      className="text-center py-2 px-2 text-[10px] font-medium text-white/40"
-                      style={{ borderRight: '1px solid rgba(255, 255, 255, 0.06)' }}
-                    >
-                      {day}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
-                    // Get all schedules for this day from assigned active tutees
-                    const schedulesForDay = assignedTutees
-                      .filter(t => t.status === 'active')
+        {dataLoaded && assignedTutees.length > 0 && (
+          <div className="glass-card p-5 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-white/40" />
+              <h3 className="text-sm font-medium text-white/80">Schedule</h3>
+            </div>
+            
+            <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <th 
+                        key={day} 
+                        className="text-center py-2 px-2 text-[10px] font-medium text-white/40"
+                        style={{ borderRight: '1px solid rgba(255, 255, 255, 0.06)' }}
+                      >
+                        {day}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                      // Get all schedules for this day from assigned active tutees
+                      const schedulesForDay = assignedTutees
+                      .filter(t => t.status && t.status.toLowerCase() === 'active')  // Case-insensitive check
                       .map(t => {
                         const schedule = t.schedule || {};
-                        const time = schedule[day] || '';
                         return {
                           tutee: t,
-                          time: time
+                          time: schedule[day] || ''
                         };
                       })
                       .filter(s => s.time && s.time !== 'TBA' && s.time !== '')
-                      // Sort times in ascending order (e.g., 8:00 AM before 3:00 PM)
                       .sort((a, b) => {
-                        // Convert times to comparable format
                         const timeA = new Date(`1970-01-01 ${a.time}`);
                         const timeB = new Date(`1970-01-01 ${b.time}`);
                         return timeA - timeB;
                       });
-                    
-                    return (
-                      <td 
-                        key={day} 
-                        className="text-center py-2 px-2 text-xs align-middle"
-                        style={{ 
-                          borderRight: index < 5 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
-                        }}
-                      >
-                        {schedulesForDay.length > 0 ? (
-                          <div className="space-y-0.5">
-                            {schedulesForDay.map((s, idx) => (
-                              <div 
-                                key={idx} 
-                                className="text-white/70 font-medium text-xs"
-                              >
-                                {s.time}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>TBA</span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          {(() => {
-            const tuteesWithSchedule = assignedTutees
-              .filter(t => t.status === 'active')
-              .filter(t => {
-                const schedule = t.schedule || {};
-                return Object.values(schedule).some(time => time && time !== 'TBA' && time !== '');
-              });
+                      
+                      return (
+                        <td 
+                          key={day} 
+                          className="text-center py-2 px-2 text-xs align-middle"
+                          style={{ 
+                            borderRight: index < 5 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                          }}
+                        >
+                          {schedulesForDay.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {schedulesForDay.map((s, idx) => (
+                                <div 
+                                  key={idx} 
+                                  className="text-white/70 font-medium text-xs"
+                                  style={{ fontSize: '11px' }}
+                                >
+                                  {s.time}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'rgba(255, 255, 255, 0.3)' }}>TBA</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             
-            if (tuteesWithSchedule.length === 0) return null;
-          })()}
-        </div>
+            {(() => {
+              const tuteesWithSchedule = assignedTutees
+                .filter(t => t.status && t.status.toLowerCase() === 'active')
+                .filter(t => {
+                  const schedule = t.schedule || {};
+                  return Object.values(schedule).some(time => time && time !== 'TBA' && time !== '');
+              });
+              
+              if (tuteesWithSchedule.length === 0) return null;
+            })()}
+          </div>
+        )}
 
         {/* Card 3: Assigned Tutees */}
         <div className="glass-card p-5 mb-4">
@@ -564,66 +545,59 @@ const sortedSubstitutions = getSortedSubstitutions();
             </div>
           )}
 
-          {/* Display assigned tutees - use currentData for edit mode, tutor for view mode */}
-          {(() => {
-            const displayTutees = isEditing 
-              ? (formData?.tutees || []).map(id => tutees.find(t => t.id === id)).filter(Boolean)
-              : assignedTutees;
-            
-            return displayTutees.length > 0 ? (
-              <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40 w-10">#</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Name</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Grade</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">School</th>
-                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Status</th>
+          {assignedTutees.length > 0 ? (
+            <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40 w-10">#</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Name</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Grade</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">School</th>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Status</th>
+                    {isEditing && (
+                      <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Action</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignedTutees.map((tutee, index) => (
+                    <tr 
+                      key={tutee.id}
+                      className="cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{ borderTop: index > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none' }}
+                      onClick={() => navigate(`/tutee/${tutee.id}`)}
+                    >
+                      <td className="py-2 px-3 text-xs text-white/40">{index + 1}</td>
+                      <td className="py-2 px-3 text-xs text-white/80">
+                        {tutee.firstName} {tutee.lastName}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-white/60">{tutee.gradeLevel || '-'}</td>
+                      <td className="py-2 px-3 text-xs text-white/60">{tutee.school || '-'}</td>
+                      <td className="py-2 px-3">
+                        <StatusChip status={tutee.status} />
+                      </td>
                       {isEditing && (
-                        <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Action</th>
+                        <td className="py-2 px-3">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveTutee(tutee.id);
+                            }}
+                            className="text-white/30 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </td>
                       )}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {displayTutees.map((tutee, index) => (
-                      <tr 
-                        key={tutee.id}
-                        className="cursor-pointer hover:bg-white/5 transition-colors"
-                        style={{ borderTop: index > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none' }}
-                        onClick={() => navigate(`/tutee/${tutee.id}`)}
-                      >
-                        <td className="py-2 px-3 text-xs text-white/40">{index + 1}</td>
-                        <td className="py-2 px-3 text-xs text-white/80">
-                          {tutee.firstName} {tutee.lastName}
-                        </td>
-                        <td className="py-2 px-3 text-xs text-white/60">{tutee.gradeLevel || '-'}</td>
-                        <td className="py-2 px-3 text-xs text-white/60">{tutee.school || '-'}</td>
-                        <td className="py-2 px-3">
-                          <StatusChip status={tutee.status} />
-                        </td>
-                        {isEditing && (
-                          <td className="py-2 px-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveTutee(tutee.id);
-                              }}
-                              className="text-white/30 hover:text-red-400 transition-colors"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-sm text-white/40 text-center py-4">No assigned tutees</p>
-            );
-          })()}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-white/40 text-center py-4">No assigned tutees</p>
+          )}
         </div>
 
         {/* Card 4: Substitution History */}
@@ -727,22 +701,12 @@ const sortedSubstitutions = getSortedSubstitutions();
           )}
 
           {/* Substitution Table */}
-          {sortedSubstitutions.length > 0 ? (
+          {substitutions.length > 0 ? (
             <div className="overflow-hidden rounded-xl" style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}>
               <table className="w-full border-collapse">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                    <th 
-                      className="text-left py-2 px-3 text-[10px] font-medium cursor-pointer hover:text-white/70 transition-colors"
-                      onClick={toggleSort}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>Date</span>
-                        <ArrowUpDown 
-                          className="w-3 h-3"
-                        />
-                      </div>
-                    </th>
+                    <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Date</th>
                     <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Substituted</th>
                     <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Tutee</th>
                     <th className="text-left py-2 px-3 text-[10px] font-medium text-white/40">Hours</th>
@@ -751,9 +715,8 @@ const sortedSubstitutions = getSortedSubstitutions();
                     )}
                   </tr>
                 </thead>
-
                 <tbody>
-                  {sortedSubstitutions.map((sub, index) => (
+                  {substitutions.map((sub, index) => (
                     <tr 
                       key={sub.id || index}
                       style={{ borderTop: index > 0 ? '1px solid rgba(255, 255, 255, 0.06)' : 'none' }}
@@ -789,7 +752,6 @@ const sortedSubstitutions = getSortedSubstitutions();
             <p className="text-sm text-white/40 text-center py-4">No substitution records</p>
           )}
         </div>
-
       </div>
 
       <BottomNav />

@@ -124,7 +124,12 @@ const ColumnHeader = ({
             </button>
             {sortDirection && (
               <>
-                <div className="border-t border-white/5 my-1" />
+                <div 
+                  style={{
+                    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                    margin: '6px 8px',
+                  }}
+                />
                 <button
                   onClick={() => {
                     onSortToggle(null);
