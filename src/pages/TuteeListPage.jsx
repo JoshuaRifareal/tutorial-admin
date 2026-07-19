@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Trash2, X } from 'lucide-react';
+import { Plus, Minus, Trash2, X, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import useTuteeStore from '../stores/tuteeStore';
 import useTutorStore from '../stores/tutorStore';
 import useUIStore from '../stores/uiStore';
@@ -13,6 +13,7 @@ import Pagination from '../components/lists/Pagination';
 import Select from '../components/common/Select';
 import DatePicker from '../components/common/DatePicker';
 import ModalityPill from '../components/common/ModalityPill';
+import { format, parseISO } from 'date-fns';
 
 const TuteeListPage = () => {
   const navigate = useNavigate();
@@ -25,7 +26,17 @@ const TuteeListPage = () => {
   const [tutorFilter, setTutorFilter] = useState('all');
   const [modalityFilter, setModalityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [gcFilter, setGcFilter] = useState('all');
+  const [afFilter, setAfFilter] = useState('all');
+  const [polFilter, setPolFilter] = useState('all');
+  
+  // Sort states
   const [sortDirection, setSortDirection] = useState('asc');
+  const [enrollmentSort, setEnrollmentSort] = useState(null);
+  const [startSort, setStartSort] = useState(null);
+  const [endSort, setEndSort] = useState(null);
+  const [balanceSort, setBalanceSort] = useState(null);
+  
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
@@ -100,6 +111,14 @@ const TuteeListPage = () => {
           });
         }
       });
+    } else if (['isInGroupChat', 'hasAdmissionForm', 'hasPolicies'].includes(field)) {
+      const trueCount = tutees.filter(t => t[field] === true).length;
+      const falseCount = tutees.filter(t => t[field] === false).length;
+      return [
+        { value: 'all', label: 'All', count: allCount },
+        { value: 'true', label: 'Yes', count: trueCount },
+        { value: 'false', label: 'No', count: falseCount },
+      ];
     } else {
       Object.entries(counts)
         .sort((a, b) => a[0].localeCompare(b[0]))
@@ -114,6 +133,16 @@ const TuteeListPage = () => {
   // Get full name for display: "LastName, FirstName"
   const getFullName = (tutee) => {
     return `${tutee.lastName || ''}, ${tutee.firstName || ''}`;
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    try {
+      return format(parseISO(dateString), 'MMM d, yyyy');
+    } catch {
+      return '-';
+    }
   };
 
   // Calculate end date (20 weekdays from start date)
@@ -135,6 +164,38 @@ const TuteeListPage = () => {
   const calculateBalance = (rate, packageHours) => {
     if (!rate || !packageHours) return 0;
     return rate * parseInt(packageHours);
+  };
+
+  // Sort toggle functions
+  const toggleNameSort = () => {
+    if (sortDirection === 'asc') setSortDirection('desc');
+    else if (sortDirection === 'desc') setSortDirection(null);
+    else setSortDirection('asc');
+    setNewTuteeId(null);
+  };
+
+  const toggleEnrollmentSort = () => {
+    if (enrollmentSort === 'asc') setEnrollmentSort('desc');
+    else if (enrollmentSort === 'desc') setEnrollmentSort(null);
+    else setEnrollmentSort('asc');
+  };
+
+  const toggleStartSort = () => {
+    if (startSort === 'asc') setStartSort('desc');
+    else if (startSort === 'desc') setStartSort(null);
+    else setStartSort('asc');
+  };
+
+  const toggleEndSort = () => {
+    if (endSort === 'asc') setEndSort('desc');
+    else if (endSort === 'desc') setEndSort(null);
+    else setEndSort('asc');
+  };
+
+  const toggleBalanceSort = () => {
+    if (balanceSort === 'asc') setBalanceSort('desc');
+    else if (balanceSort === 'desc') setBalanceSort(null);
+    else setBalanceSort('asc');
   };
 
   const filteredTutees = useMemo(() => {
@@ -165,10 +226,26 @@ const TuteeListPage = () => {
       result = result.filter(t => t.modality === modalityFilter);
     }
     
-    if (statusFilter !== 'all') {
-      result = result.filter(t => t.status === statusFilter);
+    if (gcFilter !== 'all') {
+      const val = gcFilter === 'true';
+      result = result.filter(t => t.isInGroupChat === val);
     }
     
+    if (afFilter !== 'all') {
+      const val = afFilter === 'true';
+      result = result.filter(t => t.hasAdmissionForm === val);
+    }
+    
+    if (polFilter !== 'all') {
+      const val = polFilter === 'true';
+      result = result.filter(t => t.hasPolicies === val);
+    }
+    
+    if (statusFilter !== 'all') {
+      result = result.filter(t => t.status?.toLowerCase() === statusFilter.toLowerCase());
+    }
+    
+    // Name Sort
     if (sortDirection) {
       result.sort((a, b) => {
         const nameA = `${a.lastName || ''} ${a.firstName || ''}`;
@@ -179,6 +256,43 @@ const TuteeListPage = () => {
       });
     }
     
+    // Enrollment Sort
+    if (enrollmentSort) {
+      result.sort((a, b) => {
+        const dateA = a.enrollmentDate ? new Date(a.enrollmentDate) : new Date(0);
+        const dateB = b.enrollmentDate ? new Date(b.enrollmentDate) : new Date(0);
+        return enrollmentSort === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+    
+    // Start Date Sort
+    if (startSort) {
+      result.sort((a, b) => {
+        const dateA = a.startDate ? new Date(a.startDate) : new Date(0);
+        const dateB = b.startDate ? new Date(b.startDate) : new Date(0);
+        return startSort === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+    
+    // End Date Sort
+    if (endSort) {
+      result.sort((a, b) => {
+        const dateA = a.endDate ? new Date(a.endDate) : new Date(0);
+        const dateB = b.endDate ? new Date(b.endDate) : new Date(0);
+        return endSort === 'asc' ? dateA - dateB : dateB - dateA;
+      });
+    }
+    
+    // Balance Sort
+    if (balanceSort) {
+      result.sort((a, b) => {
+        const balA = a.balance || 0;
+        const balB = b.balance || 0;
+        return balanceSort === 'asc' ? balA - balB : balB - balA;
+      });
+    }
+    
+    // New entry at top
     if (newTuteeId) {
       const newEntryIndex = result.findIndex(t => t.id === newTuteeId);
       if (newEntryIndex > 0) {
@@ -188,7 +302,24 @@ const TuteeListPage = () => {
     }
     
     return result;
-  }, [tutees, searchQuery, gradeFilter, schoolFilter, tutorFilter, modalityFilter, statusFilter, newTuteeId, sortDirection]);
+  }, [
+    tutees, 
+    searchQuery, 
+    gradeFilter, 
+    schoolFilter, 
+    tutorFilter, 
+    modalityFilter, 
+    gcFilter, 
+    afFilter, 
+    polFilter, 
+    statusFilter, 
+    sortDirection,
+    enrollmentSort,
+    startSort,
+    endSort,
+    balanceSort,
+    newTuteeId
+  ]);
 
   const totalPages = Math.ceil(filteredTutees.length / itemsPerPage);
   const paginatedTutees = filteredTutees.slice(
@@ -198,7 +329,23 @@ const TuteeListPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, gradeFilter, schoolFilter, tutorFilter, modalityFilter, statusFilter, newTuteeId]);
+  }, [
+    searchQuery, 
+    gradeFilter, 
+    schoolFilter, 
+    tutorFilter, 
+    modalityFilter, 
+    gcFilter, 
+    afFilter, 
+    polFilter, 
+    statusFilter, 
+    sortDirection,
+    enrollmentSort,
+    startSort,
+    endSort,
+    balanceSort,
+    newTuteeId
+  ]);
 
   // Validation
   const validateForm = () => {
@@ -229,12 +376,13 @@ const TuteeListPage = () => {
       gradeLevel: '',
       school: '',
       tutorId: '',
+      modality: '',
       enrollmentDate: new Date().toISOString().split('T')[0],
       startDate: new Date().toISOString().split('T')[0],
       hours: 1,
       rate: '',
       package: '20',
-      status: 'pending',
+      status: 'Pending',
     });
     setNewTuteeId(null);
     setFieldErrors({});
@@ -248,12 +396,13 @@ const TuteeListPage = () => {
       gradeLevel: '',
       school: '',
       tutorId: '',
+      modality: '',
       enrollmentDate: new Date().toISOString().split('T')[0],
       startDate: new Date().toISOString().split('T')[0],
       hours: 1,
       rate: '',
       package: '20',
-      status: 'pending',
+      status: 'Pending',
     });
     setNewTuteeId(null);
     setFieldErrors({});
@@ -261,7 +410,6 @@ const TuteeListPage = () => {
 
   const handleSaveNew = async () => {
     if (!validateForm()) {
-      // Scroll to form and focus first error
       if (formRef.current) {
         formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         const firstErrorField = Object.keys(fieldErrors)[0];
@@ -272,7 +420,6 @@ const TuteeListPage = () => {
           }
         }
       }
-      // Clear errors after 3 seconds
       setTimeout(() => {
         setFieldErrors({});
       }, 3000);
@@ -287,15 +434,15 @@ const TuteeListPage = () => {
         gradeLevel: newTutee.gradeLevel,
         school: newTutee.school,
         tutorId: newTutee.tutorId,
-        modality: newTutee.modality || '',  // ← ADD THIS
+        modality: newTutee.modality || '',
         enrollmentDate: newTutee.enrollmentDate,
         startDate: newTutee.startDate,
         endDate: calculateEndDate(newTutee.startDate),
-        renewalDate: calculateEndDate(newTutee.startDate),  // ← Keep only one
+        renewalDate: calculateEndDate(newTutee.startDate),
         hoursPerSession: parseFloat(newTutee.hours),
         rate: parseFloat(newTutee.rate),
         package: newTutee.package,
-        status: newTutee.status || 'Pending',  // ← Use sentence case
+        status: newTutee.status || 'Pending',
         balance: calculateBalance(parseFloat(newTutee.rate), newTutee.package),
         paymentRecord: [],
         schedule: {},
@@ -315,13 +462,13 @@ const TuteeListPage = () => {
         gradeLevel: '',
         school: '',
         tutorId: '',
-        modality: '',  // ← ADD THIS
+        modality: '',
         enrollmentDate: new Date().toISOString().split('T')[0],
         startDate: new Date().toISOString().split('T')[0],
         hours: 1,
         rate: '',
         package: '20',
-        status: 'Pending',  // ← Sentence case
+        status: 'Pending',
       });
       setFieldErrors({});
       
@@ -370,12 +517,6 @@ const TuteeListPage = () => {
   const handleCancelRemove = () => {
     setShowRemoveModal(false);
     setSelectedTutee(null);
-  };
-
-  // Handle manual sort
-  const handleSortToggle = (direction) => {
-    setSortDirection(direction);
-    setNewTuteeId(null);
   };
 
   // Check if a field has error
@@ -445,15 +586,9 @@ const TuteeListPage = () => {
                 </button>
                 <button
                   onClick={handleRemoveModeToggle}
-                  className={`flex items-center gap-1 text-xs px-3 py-2 rounded-xl transition-colors ${
-                    removeMode 
-                      ? 'text-white hover:bg-red-500/30' 
-                      : 'text-white/70 hover:text-white'
-                  }`}
+                  className={`flex items-center gap-1 text-xs px-3 py-2 rounded-xl transition-colors ${removeMode ? 'text-white hover:bg-red-500/30' : 'text-white/70 hover:text-white'}`}
                   style={{
-                    backgroundColor: removeMode 
-                      ? 'rgba(239, 68, 68, 0.2)' 
-                      : 'rgba(255, 255, 255, 0.05)',
+                    backgroundColor: removeMode ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                   }}
                 >
                   <Minus className="w-3 h-3" />
@@ -536,10 +671,7 @@ const TuteeListPage = () => {
                         setNewTutee(prev => ({ ...prev, tutorId: val }));
                         setFieldErrors(prev => ({ ...prev, tutorId: undefined }));
                       }}
-                      options={[
-                        { value: '', label: 'Unassigned' },
-                        ...tutors.map(tutor => ({ value: tutor.id, label: `${tutor.firstName} ${tutor.lastName}` }))
-                      ]}
+                      options={tutorOptions}
                       placeholder="Select tutor"
                       className="w-full"
                     />
@@ -637,16 +769,16 @@ const TuteeListPage = () => {
                 <div>
                   <span className="text-[10px] text-white/40 block mb-0.5">Status</span>
                   <div id="field-status" className={hasError('status') ? 'field-error rounded-lg' : ''}>
-                  <Select
-                    value={newTutee.status || 'Pending'}
-                    onChange={(val) => {
-                      setNewTutee(prev => ({ ...prev, status: val }));
-                      setFieldErrors(prev => ({ ...prev, status: undefined }));
-                    }}
-                    options={statusOptions}
-                    placeholder="Select"
-                    className="w-full"
-                  />
+                    <Select
+                      value={newTutee.status || 'Pending'}
+                      onChange={(val) => {
+                        setNewTutee(prev => ({ ...prev, status: val }));
+                        setFieldErrors(prev => ({ ...prev, status: undefined }));
+                      }}
+                      options={statusOptions}
+                      placeholder="Select"
+                      className="w-full"
+                    />
                   </div>
                 </div>
               </div>
@@ -674,22 +806,30 @@ const TuteeListPage = () => {
         {/* Table */}
         <div className="glass-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-0">
-                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12 border-0">#</th>
+                  <th className="text-left py-3 px-3 text-xs font-medium text-white/40 w-12 border-0 sticky left-0 bg-[#1a1a1a] z-20">#</th>
                   {removeMode && (
-                    <th className="text-left py-3 px-3 text-xs font-medium text-white/40 border-0 w-12">Action</th>
+                    <th className="text-left py-3 px-3 text-xs font-medium text-white/40 border-0 w-12 bg-[#1a1a1a] z-20">Action</th>
                   )}
-                  <th className="text-left py-3 px-3 border-0">
-                    <ColumnHeader
-                      label="Name"
-                      type="sort"
-                      sortDirection={sortDirection}
-                      onSortToggle={handleSortToggle}
-                    />
+                  
+                  {/* Name - Custom Sort */}
+                  <th 
+                    className="text-left py-3 px-3 border-0 min-w-[140px] sticky left-[39px] bg-[#1a1a1a] z-10 cursor-pointer hover:text-white/70 transition-colors"
+                    onClick={toggleNameSort}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: sortDirection ? '#a78bfa' : 'rgba(255, 255, 255, 0.4)' }}>
+                        Name
+                      </span>
+                      {sortDirection === 'asc' && <ChevronUp className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {sortDirection === 'desc' && <ChevronDown className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {!sortDirection && <ArrowUpDown className="w-3 h-3" style={{ color: 'rgba(255, 255, 255, 0.3)' }} />}
+                    </div>
                   </th>
-                  <th className="text-left py-3 px-3 border-0">
+                  
+                  <th className="text-left py-3 px-3 border-0 min-w-[70px]">
                     <ColumnHeader
                       label="Grade"
                       type="filter"
@@ -698,7 +838,7 @@ const TuteeListPage = () => {
                       onChange={setGradeFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3 border-0">
+                  <th className="text-left py-3 px-3 border-0 min-w-[120px]">
                     <ColumnHeader
                       label="School"
                       type="filter"
@@ -707,7 +847,7 @@ const TuteeListPage = () => {
                       onChange={setSchoolFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3 border-0">
+                  <th className="text-left py-3 px-3 border-0 min-w-[120px]">
                     <ColumnHeader
                       label="Tutor"
                       type="filter"
@@ -716,7 +856,7 @@ const TuteeListPage = () => {
                       onChange={setTutorFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3 border-0">
+                  <th className="text-left py-3 px-3 border-0 min-w-[100px]">
                     <ColumnHeader
                       label="Modality"
                       type="filter"
@@ -725,7 +865,78 @@ const TuteeListPage = () => {
                       onChange={setModalityFilter}
                     />
                   </th>
-                  <th className="text-left py-3 px-3 border-0">
+                  
+                  {/* Enrollment - Custom Sort */}
+                  <th 
+                    className="text-left py-3 px-3 border-0 min-w-[100px] cursor-pointer hover:text-white/70 transition-colors"
+                    onClick={toggleEnrollmentSort}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: enrollmentSort ? '#a78bfa' : 'rgba(255, 255, 255, 0.4)' }}>
+                        Enrollment
+                      </span>
+                      {enrollmentSort === 'asc' && <ChevronUp className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {enrollmentSort === 'desc' && <ChevronDown className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {!enrollmentSort && <ArrowUpDown className="w-3 h-3" style={{ color: 'rgba(255, 255, 255, 0.3)' }} />}
+                    </div>
+                  </th>
+                  
+                  {/* Start - Custom Sort */}
+                  <th 
+                    className="text-left py-3 px-3 border-0 min-w-[100px] cursor-pointer hover:text-white/70 transition-colors"
+                    onClick={toggleStartSort}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: startSort ? '#a78bfa' : 'rgba(255, 255, 255, 0.4)' }}>
+                        Start
+                      </span>
+                      {startSort === 'asc' && <ChevronUp className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {startSort === 'desc' && <ChevronDown className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {!startSort && <ArrowUpDown className="w-3 h-3" style={{ color: 'rgba(255, 255, 255, 0.3)' }} />}
+                    </div>
+                  </th>
+                  
+                  {/* End - Custom Sort */}
+                  <th 
+                    className="text-left py-3 px-3 border-0 min-w-[100px] cursor-pointer hover:text-white/70 transition-colors"
+                    onClick={toggleEndSort}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: endSort ? '#a78bfa' : 'rgba(255, 255, 255, 0.4)' }}>
+                        End
+                      </span>
+                      {endSort === 'asc' && <ChevronUp className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {endSort === 'desc' && <ChevronDown className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {!endSort && <ArrowUpDown className="w-3 h-3" style={{ color: 'rgba(255, 255, 255, 0.3)' }} />}
+                    </div>
+                  </th>
+                  
+                  {/* Balance - Custom Sort */}
+                  <th 
+                    className="text-left py-3 px-3 border-0 min-w-[90px] cursor-pointer hover:text-white/70 transition-colors"
+                    onClick={toggleBalanceSort}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-medium" style={{ color: balanceSort ? '#a78bfa' : 'rgba(255, 255, 255, 0.4)' }}>
+                        Balance
+                      </span>
+                      {balanceSort === 'asc' && <ChevronUp className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {balanceSort === 'desc' && <ChevronDown className="w-3 h-3" style={{ color: '#a78bfa' }} />}
+                      {!balanceSort && <ArrowUpDown className="w-3 h-3" style={{ color: 'rgba(255, 255, 255, 0.3)' }} />}
+                    </div>
+                  </th>
+                  
+                  {/* GC, AF, POL - No sort, just filters */}
+                  <th className="text-left py-3 px-3 border-0 min-w-[50px] text-center">
+                    <span className="text-xs font-medium text-white/40">GC</span>
+                  </th>
+                  <th className="text-left py-3 px-3 border-0 min-w-[50px] text-center">
+                    <span className="text-xs font-medium text-white/40">AF</span>
+                  </th>
+                  <th className="text-left py-3 px-3 border-0 min-w-[50px] text-center">
+                    <span className="text-xs font-medium text-white/40">POL</span>
+                  </th>
+                  <th className="text-left py-3 px-3 border-0 min-w-[100px]">
                     <ColumnHeader
                       label="Status"
                       type="filter"
@@ -739,7 +950,7 @@ const TuteeListPage = () => {
               <tbody>
                 {paginatedTutees.length === 0 ? (
                   <tr>
-                    <td colSpan={removeMode ? 8 : 7} className="text-center py-12 text-white/40 text-sm border-0">
+                    <td colSpan={removeMode ? 15 : 14} className="text-center py-12 text-white/40 text-sm border-0">
                       No tutees found
                     </td>
                   </tr>
@@ -758,13 +969,13 @@ const TuteeListPage = () => {
                         }}
                       >
                         {/* # Column */}
-                        <td className="py-3 px-3 text-sm text-white/40 border-0">
+                        <td className="py-3 px-3 text-sm text-white/40 border-0 sticky left-0 bg-[#1a1a1a] z-10">
                           {(currentPage - 1) * itemsPerPage + index + 1}
                         </td>
                         
                         {/* Action Column (only in remove mode) */}
                         {removeMode && (
-                          <td className="py-3 px-3 border-0 text-center">
+                          <td className="py-3 px-3 border-0 text-center bg-[#1a1a1a] z-10">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -777,9 +988,11 @@ const TuteeListPage = () => {
                           </td>
                         )}
                         
-                        <td className="py-3 px-3 text-sm text-white/80 border-0">
+                        {/* Name */}
+                        <td className="py-3 px-3 text-sm text-white/80 border-0 sticky left-[39px] bg-[#1a1a1a] z-10">
                           {getFullName(tutee)}
                         </td>
+                        
                         <td className="py-3 px-3 text-sm text-white/60 border-0">{tutee.gradeLevel || '-'}</td>
                         <td className="py-3 px-3 text-sm text-white/60 border-0">{tutee.school || '-'}</td>
                         <td className="py-3 px-3 text-sm text-white/60 border-0">{getTutorName(tutee.tutorId)}</td>
@@ -790,6 +1003,47 @@ const TuteeListPage = () => {
                             <span className="text-white/30 text-xs">-</span>
                           )}
                         </td>
+                        <td className="py-3 px-3 text-sm text-white/60 border-0">{formatDate(tutee.enrollmentDate)}</td>
+                        <td className="py-3 px-3 text-sm text-white/60 border-0">{formatDate(tutee.startDate)}</td>
+                        <td className="py-3 px-3 text-sm text-white/60 border-0">{formatDate(tutee.endDate)}</td>
+                        <td className="py-3 px-3 text-sm text-white/60 border-0">
+                          {tutee.balance ? `₱${tutee.balance}` : '₱0'}
+                        </td>
+                        
+                        {/* GC - Green/Red Circle */}
+                        <td className="py-3 px-3 text-sm text-white/60 border-0 text-center">
+                          <span className="inline-flex items-center justify-center w-3 h-3">
+                            {tutee.isInGroupChat ? (
+                              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                            )}
+                          </span>
+                        </td>
+                        
+                        {/* AF - Green/Red Circle */}
+                        <td className="py-3 px-3 text-sm text-white/60 border-0 text-center">
+                          <span className="inline-flex items-center justify-center w-3 h-3">
+                            {tutee.hasAdmissionForm ? (
+                              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                            )}
+                          </span>
+                        </td>
+                        
+                        {/* POL - Green/Red Circle */}
+                        <td className="py-3 px-3 text-sm text-white/60 border-0 text-center">
+                          <span className="inline-flex items-center justify-center w-3 h-3">
+                            {tutee.hasPolicies ? (
+                              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                            ) : (
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                            )}
+                          </span>
+                        </td>
+                        
+                        {/* Status */}
                         <td className="py-3 px-3 border-0">
                           <StatusChip status={tutee.status} />
                         </td>

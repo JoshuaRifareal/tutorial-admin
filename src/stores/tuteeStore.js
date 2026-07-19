@@ -85,17 +85,14 @@ const useTuteeStore = create((set, get) => ({
       
       const oldTutee = state.tutees[index];
       
-      // Track changes for audit log
+      // Track changes for audit log - exclude updatedAt
       const changes = {};
       Object.keys(updatedData).forEach(key => {
-        // Skip updatedAt field
         if (key === 'updatedAt') return;
-
-        // Compare old and new values
+        
         const oldValue = oldTutee[key];
         const newValue = updatedData[key];
         
-        // Only track if value actually changed
         if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
           changes[key] = { 
             old: oldValue, 
@@ -110,11 +107,12 @@ const useTuteeStore = create((set, get) => ({
         updatedAt: new Date().toISOString(),
       };
       
-      // Find the row number in Google Sheets (index + 2 because of header and 0-index)
-      const rowNumber = index + 2;
+      // IMPORTANT: Make sure we use UPDATE range, not APPEND
+      const rowNumber = index + 2; // +2 because of header and 0-index
       const range = `tutees!A${rowNumber}:AC${rowNumber}`;
       const row = tuteeToRow(updatedTutee);
       
+      // This should be updateSheetRange, NOT appendToSheet
       await updateSheetRange(range, row);
       
       // Update local state
@@ -123,7 +121,6 @@ const useTuteeStore = create((set, get) => ({
       
       // Log the changes if there are any
       if (Object.keys(changes).length > 0) {
-        // Get user email from localStorage or auth context
         const userEmail = localStorage.getItem('google_oauth_user') 
           ? JSON.parse(localStorage.getItem('google_oauth_user')).email 
           : 'system';
